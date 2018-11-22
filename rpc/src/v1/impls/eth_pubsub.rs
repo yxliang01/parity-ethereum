@@ -220,6 +220,9 @@ impl<C: LightClient> LightChainNotify for ChainNotificationHandler<C> {
 }
 
 impl<C: BlockChainClient> ChainNotify for ChainNotificationHandler<C> {
+
+	fn ignore_queue(&self) -> bool { true }
+
 	fn new_blocks(
 		&self,
 		_imported: Vec<H256>,

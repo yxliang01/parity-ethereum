@@ -327,14 +327,14 @@ impl Importer {
 		};
 
 		{
-			if !imported_blocks.is_empty() && is_empty {
+			if !imported_blocks.is_empty() {
 				let route = ChainRoute::from(import_results.as_ref());
 
 				if is_empty {
 					self.miner.chain_new_blocks(client, &imported_blocks, &invalid_blocks, route.enacted(), route.retracted(), false);
 				}
 
-				client.notify(|notify| {
+				client.notify_not_empty(|notify| {
 					notify.new_blocks(
 						imported_blocks.clone(),
 						invalid_blocks.clone(),
@@ -343,7 +343,7 @@ impl Importer {
 						proposed_blocks.clone(),
 						duration,
 					);
-				});
+				}, is_empty);
 			}
 		}
 
@@ -865,12 +865,16 @@ impl Client {
 		&*self.engine
 	}
 
-	fn notify<F>(&self, f: F) where F: Fn(&ChainNotify) {
+	fn notify_not_empty<F>(&self, f: F, queue_is_empty: bool) where F: Fn(&ChainNotify) {
 		for np in &*self.notify.read() {
 			if let Some(n) = np.upgrade() {
-				f(&*n);
+				if queue_is_empty || n.ignore_queue() { f(&*n); }
 			}
 		}
+	}
+
+	fn notify<F>(&self, f: F) where F: Fn(&ChainNotify) {
+		self.notify_not_empty(f, true)
 	}
 
 	/// Register an action to be done if a mode/spec_name change happens.
