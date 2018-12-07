@@ -677,7 +677,6 @@ dependencies = [
  "parity-machine 0.1.0",
  "parity-snappy 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "parking_lot 0.6.4 (registry+https://github.com/rust-lang/crates.io-index)",
- "patricia-trie 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "patricia-trie-ethereum 0.1.0",
  "rand 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "rayon 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -753,7 +752,6 @@ dependencies = [
  "memorydb 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "parity-bytes 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "parking_lot 0.6.4 (registry+https://github.com/rust-lang/crates.io-index)",
- "patricia-trie 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "patricia-trie-ethereum 0.1.0",
  "rand 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "rlp 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -886,7 +884,6 @@ dependencies = [
  "parity-bytes 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "parity-crypto 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "parking_lot 0.6.4 (registry+https://github.com/rust-lang/crates.io-index)",
- "patricia-trie 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "patricia-trie-ethereum 0.1.0",
  "rand 0.3.22 (registry+https://github.com/rust-lang/crates.io-index)",
  "rlp 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2514,7 +2511,7 @@ dependencies = [
  "parity-updater 1.12.0",
  "parity-version 2.3.0",
  "parking_lot 0.6.4 (registry+https://github.com/rust-lang/crates.io-index)",
- "patricia-trie 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "patricia-trie-ethereum 0.1.0",
  "pretty_assertions 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "rlp 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2697,18 +2694,6 @@ dependencies = [
  "smallvec 0.6.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "thread-id 3.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "winapi 0.3.6 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "patricia-trie"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-dependencies = [
- "elastic-array 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "hashdb 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "log 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)",
- "parity-bytes 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "rand 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -3864,6 +3849,7 @@ version = "0.2.0"
 dependencies = [
  "ethereum-types 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "keccak-hasher 0.1.1",
+ "rlp 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "trie-root 0.9.0 (git+https://github.com/paritytech/trie)",
 ]
 
@@ -4041,7 +4027,6 @@ dependencies = [
  "keccak-hash 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "parity-bytes 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "patricia-trie 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "patricia-trie-ethereum 0.1.0",
  "rlp 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -4423,7 +4408,6 @@ dependencies = [
 "checksum parity-wordlist 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "cf13102febd98f4ad416a526b42deb82daf482626ba6ab10d0ebf8f45327514c"
 "checksum parking_lot 0.6.4 (registry+https://github.com/rust-lang/crates.io-index)" = "f0802bff09003b291ba756dc7e79313e51cc31667e94afbe847def490424cde5"
 "checksum parking_lot_core 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)" = "ad7f7e6ebdc79edff6fdcb87a55b620174f7a989e3eb31b65231f4af57f00b8c"
-"checksum patricia-trie 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "10438ba40c2f6e9ceca55277d8e7f6a5dafd58cabd802e6d97e16f02aab83a03"
 "checksum percent-encoding 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)" = "31010dd2e1ac33d5b46a5b413495239882813e0369f8ed8a5e266f173602f831"
 "checksum pest 1.0.6 (registry+https://github.com/rust-lang/crates.io-index)" = "0fce5d8b5cc33983fc74f78ad552b5522ab41442c4ca91606e4236eb4b5ceefc"
 "checksum pest_derive 1.0.8 (registry+https://github.com/rust-lang/crates.io-index)" = "ca3294f437119209b084c797604295f40227cffa35c57220b1e99a6ff3bf8ee4"

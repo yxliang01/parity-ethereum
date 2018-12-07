@@ -7,5 +7,6 @@ license = "GPL-3.0"
 
 [dependencies]
 trie-root = { git = "https://github.com/paritytech/trie" }
+rlp = "0.3"
 ethereum-types = "0.4"
 keccak-hasher = { path = "../keccak-hasher" }
