@@ -16,13 +16,14 @@
 
 //! Façade crate for `patricia_trie` for Ethereum specific impls
 
-pub extern crate patricia_trie as trie; // `pub` because we need to import this crate for the tests in `patricia_trie` and there were issues: https://gist.github.com/dvdplm/869251ee557a1b4bd53adc7c971979aa
+extern crate trie_db as trie;
 extern crate elastic_array;
 extern crate parity_bytes;
 extern crate ethereum_types;
-extern crate hashdb;
+extern crate hash_db;
 extern crate keccak_hasher;
 extern crate rlp;
+extern crate memory_db;
 
 mod rlp_node_codec;
 
@@ -31,6 +32,11 @@ pub use rlp_node_codec::RlpNodeCodec;
 use ethereum_types::H256;
 use keccak_hasher::KeccakHasher;
 use rlp::DecoderError;
+
+pub use trie::{DBValue, Trie, TrieMut};
+
+/// Convenience type alias to instantiate a Keccak-flavoured `MemoryDB`
+pub type MemoryDB = memory_db::MemoryDB<KeccakHasher, DBValue>;
 
 /// Convenience type alias to instantiate a Keccak-flavoured `RlpNodeCodec`
 pub type RlpCodec = RlpNodeCodec<KeccakHasher>;
@@ -42,26 +48,19 @@ pub type RlpCodec = RlpNodeCodec<KeccakHasher>;
 ///
 /// # Example
 /// ```
-/// extern crate patricia_trie as trie;
 /// extern crate patricia_trie_ethereum as ethtrie;
-/// extern crate hashdb;
+/// extern crate hash_db;
 /// extern crate keccak_hasher;
-/// extern crate memorydb;
 /// extern crate ethereum_types;
 /// extern crate elastic_array;
 ///
-/// use trie::*;
-/// use hashdb::*;
+/// use hash_db::HashDB;
 /// use keccak_hasher::KeccakHasher;
-/// use memorydb::*;
 /// use ethereum_types::H256;
-/// use ethtrie::{TrieDB, TrieDBMut};
-/// use elastic_array::ElasticArray128;
-///
-/// type DBValue = ElasticArray128<u8>;
+/// use ethtrie::{MemoryDB, TrieDB, TrieDBMut, Trie, TrieMut, DBValue};
 ///
 /// fn main() {
-///   let mut memdb = MemoryDB::<KeccakHasher, DBValue>::new();
+///   let mut memdb = ethtrie::null_rlp_memory_db();
 ///   let mut root = H256::new();
 ///   TrieDBMut::new(&mut memdb, &mut root).insert(b"foo", b"bar").unwrap();
 ///   let t = TrieDB::new(&memdb, &root).unwrap();
@@ -85,26 +84,21 @@ pub type FatDB<'db> = trie::FatDB<'db, KeccakHasher, RlpCodec>;
 
 /// # Example
 /// ```
-/// extern crate patricia_trie as trie;
+/// extern crate trie_db as trie;
 /// extern crate patricia_trie_ethereum as ethtrie;
-/// extern crate hashdb;
+/// extern crate hash_db;
 /// extern crate keccak_hash;
 /// extern crate keccak_hasher;
-/// extern crate memorydb;
 /// extern crate ethereum_types;
 /// extern crate elastic_array;
 ///
 /// use keccak_hash::KECCAK_NULL_RLP;
-/// use ethtrie::{TrieDBMut, trie::TrieMut};
+/// use ethtrie::{TrieDBMut, Trie, TrieMut, DBValue};
 /// use keccak_hasher::KeccakHasher;
-/// use memorydb::*;
 /// use ethereum_types::H256;
-/// use elastic_array::ElasticArray128;
-///
-/// type DBValue = ElasticArray128<u8>;
 ///
 /// fn main() {
-///   let mut memdb = MemoryDB::<KeccakHasher, DBValue>::new();
+///   let mut memdb = ethtrie::null_rlp_memory_db();
 ///   let mut root = H256::new();
 ///   let mut t = TrieDBMut::new(&mut memdb, &mut root);
 ///   assert!(t.is_empty());
@@ -129,5 +123,11 @@ pub type TrieFactory = trie::TrieFactory<KeccakHasher, RlpCodec>;
 
 /// Convenience type alias for Keccak/Rlp flavoured trie errors
 pub type TrieError = trie::TrieError<H256, DecoderError>;
+
 /// Convenience type alias for Keccak/Rlp flavoured trie results
 pub type Result<T> = trie::Result<T, H256, DecoderError>;
+
+/// Create a MemoryDB with NULL_RLP as null node.
+pub fn null_rlp_memory_db() -> MemoryDB {
+	MemoryDB::from_null_node(&rlp::NULL_RLP, rlp::NULL_RLP.as_ref().into())
+}
