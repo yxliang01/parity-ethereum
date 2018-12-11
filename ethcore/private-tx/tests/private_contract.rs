@@ -63,6 +63,7 @@ fn private_contract() {
 		validator_accounts: vec![key3.address(), key4.address()],
 		signer_account: None,
 		passwords: vec!["".into()],
+		logs_path: None,
 	};
 
 	let io = ethcore_io::IoChannel::disconnected();

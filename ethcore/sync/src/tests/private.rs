@@ -70,12 +70,14 @@ fn send_private_transaction() {
 		validator_accounts: vec![s1.address()],
 		signer_account: None,
 		passwords: vec!["".into()],
+		logs_path: None,
 	};
 
 	let signer_config = ProviderConfig{
 		validator_accounts: Vec::new(),
 		signer_account: Some(s0.address()),
 		passwords: vec!["".into()],
+		logs_path: None,
 	};
 
 	let pm0 = Arc::new(Provider::new(
