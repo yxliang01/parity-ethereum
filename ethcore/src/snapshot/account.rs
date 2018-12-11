@@ -27,6 +27,7 @@ use rlp::{RlpStream, Rlp};
 use snapshot::Error;
 use std::collections::HashSet;
 use trie::{Trie, TrieMut};
+use kvdb::DBValue;
 
 // An empty account -- these were replaced with RLP null data for a space optimization in v1.
 const ACC_EMPTY: BasicAccount = BasicAccount {
@@ -88,7 +89,13 @@ pub fn to_fat_rlps(account_hash: &H256, acc: &BasicAccount, acct_db: &AccountDB,
 			match acct_db.get(&acc.code_hash) {
 				Some(c) => {
 					used_code.insert(acc.code_hash.clone());
-					account_stream.append(&CodeState::Inline.raw()).append(&&*c);
+					account_stream.append(&CodeState::Inline.raw());
+
+					// Code is a list [code_hash, code_bytes]
+					account_stream.begin_list(2);
+					account_stream
+						.append(&acc.code_hash)
+						.append(&&*c);
 				}
 				None => {
 					warn!("code lookup failed during snapshot");
@@ -167,9 +174,11 @@ pub fn from_fat_rlp(
 	let (code_hash, new_code) = match code_state {
 		CodeState::Empty => (KECCAK_EMPTY, None),
 		CodeState::Inline => {
-			let code: Bytes = rlp.val_at(3)?;
-			let code_hash = acct_db.insert(&code);
+			let code_list = rlp.at(3)?;
+			let code_hash: H256 = code_list.val_at(0)?;
+			let code: Bytes = code_list.val_at(1)?;
 
+			acct_db.emplace(code_hash, DBValue::from_slice(&code));
 			(code_hash, Some(code))
 		}
 		CodeState::Hash => {
