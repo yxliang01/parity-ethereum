@@ -19,7 +19,7 @@
 use jsonrpc_core::Error;
 
 use v1::types::{Bytes, PrivateTransactionReceipt, H160, H256, U256, BlockNumber,
-	PrivateTransactionReceiptAndTransaction, CallRequest};
+	PrivateTransactionReceiptAndTransaction, CallRequest, PrivateTransactionLog};
 
 build_rpc_trait! {
 	/// Private transaction management RPC interface.
@@ -41,5 +41,9 @@ build_rpc_trait! {
 		/// Retrieve the id of the key associated with the contract
 		#[rpc(name = "private_contractKey")]
 		fn private_contract_key(&self, H160) -> Result<H256, Error>;
+
+		/// Retrieve log information about private transaction
+		#[rpc(name = "private_log")]
+		fn private_log(&self, H256) -> Result<PrivateTransactionLog, Error>;
 	}
 }

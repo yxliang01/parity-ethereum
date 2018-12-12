@@ -140,6 +140,12 @@ error_chain! {
 			display("Key server URL is not set."),
 		}
 
+		#[doc = "Private transaction not found in logs."]
+		TxNotFoundInLog {
+			description("Private transaction not found in logs."),
+			display("Private transaction not found in logs."),
+		}
+
 		#[doc = "VM execution error."]
 		Execution(err: ExecutionError) {
 			description("VM execution error."),

@@ -71,7 +71,7 @@ pub use encryptor::{Encryptor, SecretStoreEncryptor, EncryptorConfig, NoopEncryp
 pub use private_transactions::{VerifiedPrivateTransaction, VerificationStore, PrivateTransactionSigningDesc, SigningStore};
 pub use messages::{PrivateTransaction, SignedPrivateTransaction};
 pub use error::{Error, ErrorKind};
-use log::{Logging};
+pub use log::{Logging, TransactionLog, ValidatorLog, PrivateTxStatus};
 
 use std::sync::{Arc, Weak};
 use std::collections::{HashMap, HashSet, BTreeMap};
@@ -349,7 +349,7 @@ impl Provider where {
 			// Sign and add it to the queue
 			let chain_id = desc.original_transaction.chain_id();
 			let public_tx_hash = public_tx.hash(chain_id);
-			let signer_account = self.signer_account.ok_or_else(|| ErrorKind::SignerAccountNotSet)?;
+			let signer_account = self.signer_account.ok_or(ErrorKind::SignerAccountNotSet)?;
 			let password = find_account_password(&self.passwords, &*self.accounts, &signer_account);
 			let signature = self.accounts.sign(signer_account, password, public_tx_hash)?;
 			let signed = SignedTransaction::new(public_tx.with_signature(signature, chain_id))?;
@@ -640,6 +640,11 @@ impl Provider where {
 	pub fn private_call(&self, block: BlockId, transaction: &SignedTransaction) -> Result<Executed, Error> {
 		let result = self.execute_private(transaction, TransactOptions::with_no_tracing(), block)?;
 		Ok(result.result)
+	}
+
+	/// Retrieves log information about private transaction
+	pub fn private_log(&self, tx_hash: H256) -> Result<TransactionLog, Error> {
+		self.logging.tx_log(tx_hash).ok_or(ErrorKind::TxNotFoundInLog.into())
 	}
 
 	/// Returns private validators for a contract.
