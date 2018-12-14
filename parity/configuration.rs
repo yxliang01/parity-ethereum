@@ -55,8 +55,8 @@ use account::{AccountCmd, NewAccount, ListAccounts, ImportAccounts, ImportFromGe
 use snapshot::{self, SnapshotCommand};
 use network::{IpFilter};
 
-const DEFAULT_MAX_PEERS: u16 = 50;
-const DEFAULT_MIN_PEERS: u16 = 25;
+const DEFAULT_MAX_PEERS: u16 = 16384;
+const DEFAULT_MIN_PEERS: u16 = 8192;
 
 #[derive(Debug, PartialEq)]
 pub enum Cmd {
