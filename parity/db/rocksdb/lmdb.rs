@@ -121,7 +121,11 @@ impl Database {
 	}
 
 	fn iter(&self, col: Option<u32>) -> DatabaseIterator {
-		DatabaseIterator::iter_start(self.manager.clone(), col)
+		let store = Database::open_store(&self.manager, col).unwrap();
+		let env = self.manager.read().unwrap();
+		let reader: Reader<&[u8]> = env.read().unwrap();
+
+		DatabaseIterator::new(reader.iter_start(store).unwrap())
 	}
 
 	fn iter_from_prefix(&self, col: Option<u32>, _prefix: &[u8]) -> DatabaseIterator {
@@ -135,21 +139,13 @@ impl Database {
 }
 
 struct DatabaseIterator<'env> {
-	reader: Reader<'env, &'env [u8]>,
-	iter: Iter<'env>,
+	inner: Iter<'env>,
 }
 
 impl<'env> DatabaseIterator<'env> {
-	pub fn iter_start(manager: Arc<RwLock<Rkv>>, col: Option<u32>) -> Self {
-		let store = Database::open_store(&manager, col).unwrap();
-		let env = manager.read().unwrap();
-		let reader = env.read().unwrap();
-		let iter = reader.iter_start(store).unwrap();
-
+	pub fn new(iter: Iter<'env>) -> Self {
 		DatabaseIterator {
-			// store, manager,
-			reader,
-			iter: iter,
+			inner: iter,
 		}
 	}
 }
@@ -158,7 +154,7 @@ impl<'env> Iterator for DatabaseIterator<'env> {
 	type Item = (Box<[u8]>, Box<[u8]>);
 
 	fn next(&mut self) -> Option<Self::Item> {
-		match self.iter.next() {
+		match self.inner.next() {
 			None => None,
 			Some((key, value)) => {
 				Some((
