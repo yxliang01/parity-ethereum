@@ -63,6 +63,7 @@ keccak-hash = "0.1"
 migration-rocksdb = { path = "util/migration-rocksdb" }
 kvdb = "0.1"
 kvdb-rocksdb = "0.1.3"
+rkv = { git = "https://github.com/ngotchac/rkv/", branch = "ngotchac-patch-1" }
 journaldb = { path = "util/journaldb" }
 mem = { path = "util/mem" }
 
