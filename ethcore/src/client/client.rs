@@ -33,7 +33,7 @@ use kvdb::{DBValue, KeyValueDB, DBTransaction};
 use ethereum_types::{H256, Address, U256};
 use block::{IsBlock, LockedBlock, Drain, ClosedBlock, OpenBlock, enact_verified, SealedBlock};
 use blockchain::{BlockChain, BlockChainDB, BlockProvider, TreeRoute, ImportRoute, TransactionAddress, ExtrasInsert,
-	BlockNumberKey};
+	BlockNumberKey, BlockReceipts};
 use client::ancient_import::AncientVerifier;
 use client::{
 	Nonce, Balance, ChainInfo, BlockInfo, CallContract, TransactionInfo,
