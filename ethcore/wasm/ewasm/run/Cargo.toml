@@ -1,0 +1,24 @@
+[package]
+name = "ewasm-run"
+version = "0.1.0"
+authors = ["Parity Technologies <admin@parity.io>"]
+
+[dependencies]
+# serde = "1"
+# serde_json = "1"
+# serde_derive = "1"
+log = "0.4"
+byteorder = "1.0"
+ethereum-types = "0.4"
+# ethjson = { path = "../../../json" }
+# ethcore-logger = { path = "../../../logger" }
+
+parity-wasm = "0.31"
+wasmi = "0.3.0"
+vm = { path = "../../../vm" }
+wasm = { path = "../../../wasm" }
+clap = "2.24"
+# rustc-hex = "1"
+
+# [features]
+# default = ["ethereum-types/std"]

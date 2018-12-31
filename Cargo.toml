@@ -127,6 +127,8 @@ members = [
 	"accounts/ethstore/cli",
 	"chainspec",
 	"ethcore/wasm/run",
+	"ethcore/wasm/ewasm/run",
+	"ethcore/types",
 	"evmbin",
 	"parity-clib",
 	"whisper/cli",
