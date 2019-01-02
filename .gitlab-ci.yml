@@ -94,6 +94,7 @@ push:cargo:
   tags:
     - ci2
 
+<<<<<<< HEAD
 .test-cpp:                         &test-cpp
   stage:                           test
   <<:                              *cachew
@@ -123,6 +124,16 @@ push:cargo:
     - ci2
 
 .build-linux:                      &build-linux
+=======
+test-audit:
+  stage:                           test
+  script:
+    - scripts/gitlab/cargo-audit.sh
+  tags:
+    - rust-stable
+
+build-linux:
+>>>>>>> master
   stage:                           build
   # only:                            *releaseable_branches
   variables:
@@ -187,6 +198,7 @@ push:build-android:
   only:
     - pushes
 
+<<<<<<< HEAD
 push:build-windows:
   <<:                              *build-windows
   dependencies:
@@ -302,3 +314,47 @@ cargo-audit:
 #     - scripts/gitlab/test-all.sh nightly
 #   tags:
 #     - ci2
+=======
+publish-docs:
+  stage:                            publish
+  only:
+    - tags
+  except:
+    - nightly
+  cache: {}
+  script:
+    - scripts/gitlab/publish-docs.sh
+  tags:
+    - shell
+
+build-android:
+  stage:                           optional
+  image:                           parity/rust-android:gitlab-ci
+  variables:
+    CARGO_TARGET:                  armv7-linux-androideabi
+  script:
+    - scripts/gitlab/build-unix.sh
+  tags:
+    - rust-arm
+  allow_failure:                   true
+
+test-beta:
+  stage:                           optional
+  variables:
+    RUN_TESTS:                     cargo
+  script:
+    - scripts/gitlab/test-all.sh beta
+  tags:
+    - rust-beta
+  allow_failure:                   true
+
+test-nightly:
+  stage:                           optional
+  variables:
+    RUN_TESTS:                     all
+  script:
+    - scripts/gitlab/test-all.sh nightly
+  tags:
+    - rust-nightly
+  allow_failure:                   true
+>>>>>>> master

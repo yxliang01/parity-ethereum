@@ -23,9 +23,9 @@ use std::str::FromStr;
 use itertools::Itertools;
 use indexmap::IndexSet;
 use serde_json::to_value;
-use parser::{Parser, Type};
-use error::{Result, ErrorKind, serde_error};
-use eip712::{EIP712, MessageTypes};
+use crate::parser::{Parser, Type};
+use crate::error::{Result, ErrorKind, serde_error};
+use crate::eip712::{EIP712, MessageTypes};
 use rustc_hex::FromHex;
 use validator::Validate;
 use std::collections::HashSet;
@@ -162,7 +162,7 @@ fn encode_data(
 
 			check_hex(&string)?;
 
-			let mut bytes = (&string[2..])
+			let bytes = (&string[2..])
 				.from_hex::<Vec<u8>>()
 				.map_err(|err| ErrorKind::HexParseError(format!("{}", err)))?;
 
@@ -208,7 +208,7 @@ fn encode_data(
 }
 
 /// encodes and hashes the given EIP712 struct
-pub fn hash_structured_data(typed_data: EIP712) -> Result<Vec<u8>> {
+pub fn hash_structured_data(typed_data: EIP712) -> Result<H256> {
 	// validate input
 	typed_data.validate()?;
 	// EIP-191 compliant
@@ -220,7 +220,7 @@ pub fn hash_structured_data(typed_data: EIP712) -> Result<Vec<u8>> {
 		encode_data(&parser, &Type::Custom(typed_data.primary_type), &typed_data.types, &typed_data.message, None)?
 	);
 	let concat = [&prefix[..], &domain_hash[..], &data_hash[..]].concat();
-	Ok(keccak(concat).to_vec())
+	Ok(keccak(concat))
 }
 
 #[cfg(test)]
