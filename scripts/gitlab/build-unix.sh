@@ -27,6 +27,10 @@ echo "CXX:              " $CXX
 
 echo "_____ Building target: "$CARGO_TARGET" _____"
 time cargo build --target $CARGO_TARGET --release --features final
+# only thing we need for android
+time cargo build --target $CARGO_TARGET --release -p parity-clib --features final
+
+# not needed for android build
 time cargo build --target $CARGO_TARGET --release -p evmbin
 time cargo build --target $CARGO_TARGET --release -p ethstore-cli
 time cargo build --target $CARGO_TARGET --release -p ethkey-cli
