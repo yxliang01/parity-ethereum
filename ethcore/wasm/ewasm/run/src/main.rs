@@ -496,11 +496,6 @@ mod panic_payload {
 }
 
 
-
-
-
-
-
 type Result<T> = ::std::result::Result<T, Error>;
 
 impl<'a> Runtime<'a> {
@@ -680,7 +675,6 @@ impl<'a> Runtime<'a> {
 		}
 	}
 
-
 	fn do_call(
 		&mut self,
 		use_val: bool,
@@ -789,6 +783,24 @@ impl<'a> Runtime<'a> {
 	// ################################################################################
 	// EWASM specific callbacks - essentially PWASM with different names where possible
 
+	/// Subtracts an amount to the gas counter
+	///
+	/// Parameters:
+	/// amount i64 - the amount to subtract to the gas counter
+	///
+	/// Returns: nothing
+	pub fn use_gas(&mut self, args: RuntimeArgs) -> Result<()> {
+		let amount: u64 = args.nth_checked(0)?;
+		let prev = self.gas_counter;
+		match prev.checked_add(amount) {
+			Some(val) if val <= self.gas_limit =>
+				self.gas_counter = prev + amount,
+			_ =>
+				self.gas_counter = std::u64::MAX
+		}
+		Ok(())
+	}
+
 	/// Returns the current gasCounter
 	///
 	/// Parameters: nothing
@@ -812,6 +824,32 @@ impl<'a> Runtime<'a> {
 		self.return_address_ptr(args.nth_checked(0)?, address)
 	}
 
+	/// Gets balance of the given account and loads it into memory at the given offset.
+	///
+	/// Parameters:
+	/// addressOffset i32ptr - the memory offset to load the address from (address)
+	/// resultOffset i32ptr - the memory offset to load the balance into (u128)
+	///
+	/// Returns: nothing
+	///
+	/// Trap conditions:
+	/// load from memory at addressOffset results in out of bounds access,
+	/// store to memory at resultOffset results in out of bounds access.
+	pub fn get_external_balance(&mut self, args: RuntimeArgs) -> Result<()> {
+		let address = self.address_at(args.nth_checked(0)?)?;
+		let result_ptr: u32 = args.nth_checked(1)?;
+
+		if let Ok(balance) = self.ext.balance(&address) {
+			if balance > U128::MAX.into() {
+				return Err(Error::Other); // not great, huh?
+			}
+			self.return_u128_ptr(result_ptr, U128::from(balance))?;
+			Ok(())
+		} else {
+			Err(Error::BalanceQueryError)
+		}
+	}
+
 	/// Gets the block’s beneficiary address and loads into memory.
 	///
 	/// Parameters:
@@ -825,7 +863,6 @@ impl<'a> Runtime<'a> {
 		let coinbase = self.ext.env_info().author;
 		self.return_address_ptr(args.nth_checked(0)?, coinbase)
 	}
-
 
 	/// Get the block’s difficulty.
 	///
@@ -896,6 +933,21 @@ impl<'a> Runtime<'a> {
 		Ok(RuntimeValue::I64(timestamp as i64))
 	}
 
+	/// Gets price of gas in current environment.
+	///
+	/// Parameters:
+	/// resultOffset i32ptr - the memory offset to write the value to (u128)
+	///
+	/// Returns: nothing
+	///
+	/// Trap conditions:
+	/// store u128 to memory at resultOffset results in out of bounds access.
+	pub fn get_tx_gas_price(&mut self, args: RuntimeArgs) -> Result<()> {
+		let ptr: u32 = args.nth_checked(0)?;
+		let price = U128::from(self.schedule().tx_gas);
+		self.return_u128_ptr(ptr, price)
+	}
+
 	/// Gets the execution's origination address and loads it into memory at the given offset.
 	/// This is the sender of original transaction; it is never an account with non-empty associated code.
 	///
@@ -925,7 +977,6 @@ impl<'a> Runtime<'a> {
 		let sender = self.context.sender;
 		self.return_address_ptr(args.nth_checked(0)?, sender)
 	}
-
 
 	/// Copies the input data in current environment to memory.
 	/// This pertains to the input data passed with the message call instruction or transaction.
@@ -985,7 +1036,6 @@ impl<'a> Runtime<'a> {
 		RuntimeValue::I32(self.args.len() as i32)
 	}
 
-
 	/// Creates a new log in the current environment
 	///
 	/// Parameters:
@@ -1037,9 +1087,6 @@ impl<'a> Runtime<'a> {
 
 		Ok(())
 	}
-
-
-
 
 	/// Sends a message with arbitrary data to a given address path
 	///
@@ -1143,9 +1190,6 @@ impl<'a> Runtime<'a> {
 			       vm::CreateContractAddress::FromSenderAndCodeHash)
 	}
 
-
-
-
 	/// Copies the current return data buffer to memory.
 	/// This contains the return data from last executed call, callCode, callDelegate, callStatic or create.
 	///
@@ -1165,10 +1209,6 @@ impl<'a> Runtime<'a> {
 		let ptr: u32 = args.nth_checked(0)?;
 		let offset: u32 = args.nth_checked(1)?;
 		let length: u32 = args.nth_checked(2)?;
-
-		if offset + length > self.result.len() as u32 {
-			return Err(Error::MemoryAccessViolation);
-		}
 
 		// TODO: charge some gas here?
 
@@ -1246,6 +1286,101 @@ impl<'a> Runtime<'a> {
 		trace!(target: "wasm", "Contract custom panic message: {}", msg);
 
 		Err(Error::Panic(msg).into())
+	}
+
+	/// Gets the size of code running in current environment.
+	///
+	/// Parameters: none
+	///
+	/// Returns: codeSize i32
+	pub fn get_code_size(&mut self) -> Result<RuntimeValue> {
+		let address = self.context.code_address;
+
+		if let Ok(Some(size)) = self.ext.extcodesize(&address) {
+			Ok(RuntimeValue::I32(size as i32))
+		} else {
+			let msg = format!("couldn't determine code size at address {}", address);
+			Err(Error::Panic(msg).into())
+		}
+	}
+
+	/// Copies the code running in current environment to memory.
+	///
+	/// Parameters:
+	/// resultOffset i32ptr - the memory offset to load the result into (bytes)
+	/// codeOffset i32 - the offset within the code
+	/// length i32 - the length of code to copy
+	///
+	/// Returns: nothing
+	///
+	/// Trap conditions:
+	/// load length number of bytes from the current code buffer at codeOffset results in out of bounds access,
+	/// store length number of bytes to memory at resultOffset results in out of bounds access.
+	pub fn code_copy(&mut self, args: RuntimeArgs) -> Result<()> {
+		let address = self.context.code_address;
+		let result_ptr: u32 = args.nth_checked(0)?;
+		let code_ptr: u32 = args.nth_checked(1)?;
+		let code_len: u32 = args.nth_checked(2)?;
+
+		if let Ok(Some(code)) = self.ext.extcode(&address) {
+			let code_range = code_ptr as usize..(code_ptr + code_len) as usize;
+			self.memory.set(result_ptr, &code[code_range])?;
+			Ok(())
+		} else {
+			let msg = format!("couldn't fetch code at address {}", address);
+			Err(Error::Panic(msg).into())
+		}
+	}
+
+	/// Get size of an account’s code.
+	///
+	/// Parameters:
+	/// addressOffset - i32ptr the memory offset to load the address from (address)
+	///
+	/// Returns: extCodeSize i32
+	///
+	/// Trap conditions:
+	/// load address from memory at addressOffset results in out of bounds access.
+	pub fn get_external_code_size(&mut self, args: RuntimeArgs) -> Result<RuntimeValue> {
+		let address = self.address_at(args.nth_checked(0)?)?;
+
+		if let Ok(Some(size)) = self.ext.extcodesize(&address) {
+			Ok(RuntimeValue::I32(size as i32))
+		} else {
+			let msg = format!("couldn't determine code size at address {}", address);
+			Err(Error::Panic(msg).into())
+		}
+	}
+
+	/// Copies the code of an account to memory.
+	///
+	/// Parameters:
+	/// addressOffset i32ptr - the memory offset to load the address from (address)
+	/// resultOffset i32ptr - the memory offset to load the result into (bytes)
+	/// codeOffset i32 - the offset within the code
+	/// length i32 - the length of code to copy
+	///
+	/// Returns: nothing
+	///
+	/// Trap conditions:
+	///
+	/// load address from memory at addressOffset results in out of bounds access,
+	/// load length number of bytes from the account code buffer at codeOffset results in out of bounds access,
+	/// store length number of bytes to memory at resultOffset results in out of bounds access.
+	pub fn external_code_copy(&mut self, args: RuntimeArgs) -> Result<()> {
+		let address = self.address_at(args.nth_checked(0)?)?;
+		let result_ptr: u32 = args.nth_checked(1)?;
+		let code_ptr: u32 = args.nth_checked(2)?;
+		let code_len: u32 = args.nth_checked(3)?;
+
+		if let Ok(Some(code)) = self.ext.extcode(&address) {
+			let code_range = code_ptr as usize..(code_ptr + code_len) as usize;
+			self.memory.set(result_ptr, &code[code_range])?;
+			Ok(())
+		} else {
+			let msg = format!("couldn't fetch code at address {}", address);
+			Err(Error::Panic(msg).into())
+		}
 	}
 
 	/// Loads a 256-bit a value to memory from persistent storage
@@ -1360,17 +1495,17 @@ impl<'a> Externals for Runtime<'a> {
 		use ids::*;
 
 		match index {
-			// USE_GAS_FUNC => void!(self.use_gas(args)),
+			USE_GAS_FUNC => void!(self.use_gas(args)),
 			GET_GAS_LEFT_FUNC => some!(self.get_gas_left()),
 			GET_ADDRESS_FUNC => void!(self.get_address(args)),
-			// GET_EXTERNAL_BALANCE_FUNC => void!(self.get_external_balance(args)),
+			GET_EXTERNAL_BALANCE_FUNC => void!(self.get_external_balance(args)),
 			GET_BLOCK_COINBASE_FUNC => void!(self.get_block_coinbase(args)),
 			GET_BLOCK_DIFFICULTY_FUNC => void!(self.get_block_difficulty(args)),
 			GET_BLOCK_GAS_LIMIT_FUNC => some!(self.get_block_gas_limit()),
 			GET_BLOCK_HASH_FUNC => some!(self.get_block_hash(args)),
 			GET_BLOCK_NUMBER_FUNC => some!(self.get_block_number()),
 			GET_BLOCK_TIMESTAMP_FUNC => some!(self.get_block_timestamp()),
-			// GET_TX_GAS_PRICE_FUNC => void!(self.get_tx_gas_price(args)),
+			GET_TX_GAS_PRICE_FUNC => void!(self.get_tx_gas_price(args)),
 			GET_TX_ORIGIN_FUNC => void!(self.get_tx_origin(args)),
 			LOG_FUNC => void!(self.log(args)),
 			CALL_FUNC => some!(self.call(args)),
@@ -1386,10 +1521,10 @@ impl<'a> Externals for Runtime<'a> {
 			GET_CALL_DATA_SIZE_FUNC => cast!(self.get_call_data_size()),
 			GET_CALLER_FUNC => void!(self.get_caller(args)),
 			GET_CALL_VALUE_FUNC => void!(self.get_call_value(args)),
-			// CODE_COPY_FUNC => void!(self.code_copy(args)),
-			// GET_CODE_SIZE_FUNC => cast!(self.get_code_size(args)),
-			// EXTERNAL_CODE_COPY_FUNC => void!(self.external_code_copy(args)),
-			// GET_EXTERNAL_CODE_SIZE_FUNC => cast!(self.get_external_code_size(args)),
+			CODE_COPY_FUNC => void!(self.code_copy(args)),
+			GET_CODE_SIZE_FUNC => some!(self.get_code_size()),
+			EXTERNAL_CODE_COPY_FUNC => void!(self.external_code_copy(args)),
+			GET_EXTERNAL_CODE_SIZE_FUNC => some!(self.get_external_code_size(args)),
 			STORAGE_LOAD_FUNC => void!(self.storage_load(args)),
 			STORAGE_STORE_FUNC => void!(self.storage_store(args)),
 			SELF_DESTRUCT_FUNC => void!(self.self_destruct(args)),
@@ -1466,35 +1601,4 @@ fn main() {
 			println!("!!!!!!!!!! NOOOO = {:?}", err);
 		}
 	}
-}
-
-
-
-	// let n1: [u8; 32] = [1,2,3,4,5,6,7,8,
-	// 		    9,1,2,3,4,5,6,7,
-	// 		    8,9,1,2,3,4,5,6,
-	// 		    7,8,9,1,2,3,4,5];
-
-	// println!("////////// {:?}", U256::from_big_endian(&n1));
-
-	// let x: U256 = U256::from_dec_str("455867356320691211509079568257800983799433843217927484866578299507062277125").unwrap();
-
-	// let mut n2: [u8; 32] = [0; 32];
-
-	// x.to_big_endian(&mut n2[..]);
-
-	// //println!("////////// {:?}", (0..31).map(|i| n.byte(i)).collect::<Vec<u8>>());
-	// println!("////////// {:?}", n2);
-
-
-#[test]
-fn xxx() -> () {
-
-	let mut v = Vec::new();
-
-	v.resize(100, 0);
-
-	println!("////////// y len = {:?} = {:?}", v.len(), v);
-
-
 }
