@@ -17,31 +17,20 @@
 //! ActionParams parser for wasm
 
 use vm;
-use wasm_utils::{self, rules};
+use pwasm_utils::{self, rules};
 use parity_wasm::elements::{self, Deserialize};
 use parity_wasm::peek_size;
+use std::io;
 
-fn gas_rules(wasm_costs: &vm::WasmCosts) -> rules::Set {
-	rules::Set::new(
-		wasm_costs.regular,
-		{
-			let mut vals = ::std::collections::BTreeMap::new();
-			vals.insert(rules::InstructionType::Load, rules::Metering::Fixed(wasm_costs.mem as u32));
-			vals.insert(rules::InstructionType::Store, rules::Metering::Fixed(wasm_costs.mem as u32));
-			vals.insert(rules::InstructionType::Div, rules::Metering::Fixed(wasm_costs.div as u32));
-			vals.insert(rules::InstructionType::Mul, rules::Metering::Fixed(wasm_costs.mul as u32));
-			vals
-		})
-		.with_grow_cost(wasm_costs.grow_mem)
-		.with_forbidden_floats()
-}
 
 /// Splits payload to code and data according to params.params_type, also
 /// loads the module instance from payload and injects gas counter according
 /// to schedule.
-pub fn payload<'a>(params: &'a vm::ActionParams, wasm_costs: &vm::WasmCosts)
-	-> Result<(elements::Module, &'a [u8]), vm::Error>
-{
+pub fn payload<'a>(
+        params: &'a vm::ActionParams,
+        costs: &rules::Set,
+        max_stack_height: u32
+) -> Result<(elements::Module, &'a [u8]), vm::Error> {
 	let code = match params.code {
 		Some(ref code) => &code[..],
 		None => { return Err(vm::Error::Wasm("Invalid wasm call".to_owned())); }
@@ -50,19 +39,16 @@ pub fn payload<'a>(params: &'a vm::ActionParams, wasm_costs: &vm::WasmCosts)
 	let (mut cursor, data_position) = match params.params_type {
 		vm::ParamsType::Embedded => {
 			let module_size = peek_size(&*code);
-			(
-				::std::io::Cursor::new(&code[..module_size]),
-				module_size
-			)
+                        let cursor = io::Cursor::new(&code[..module_size]);
+			(cursor, module_size)
 		},
 		vm::ParamsType::Separate => {
-			(::std::io::Cursor::new(&code[..]), 0)
+			(io::Cursor::new(&code[..]), 0)
 		},
 	};
 
-	let deserialized_module = elements::Module::deserialize(
-			&mut cursor
-		).map_err(|err| {
+	let deserialized_module = elements::Module::deserialize(&mut cursor)
+                .map_err(|err| {
 			vm::Error::Wasm(format!("Error deserializing contract code ({:?})", err))
 		})?;
 
@@ -72,14 +58,12 @@ pub fn payload<'a>(params: &'a vm::ActionParams, wasm_costs: &vm::WasmCosts)
 		return Err(vm::Error::Wasm(format!("Malformed wasm module: internal memory")));
 	}
 
-	let contract_module = wasm_utils::inject_gas_counter(
-		deserialized_module,
-		&gas_rules(wasm_costs),
-	).map_err(|_| vm::Error::Wasm(format!("Wasm contract error: bytecode invalid")))?;
+	let contract_module = pwasm_utils::inject_gas_counter(deserialized_module, costs)
+                .map_err(|_| vm::Error::Wasm(format!("Wasm contract error: bytecode invalid")))?;
 
-	let contract_module = wasm_utils::stack_height::inject_limiter(
-		contract_module,
-		wasm_costs.max_stack_height,
+	let contract_module = pwasm_utils::stack_height::inject_limiter(
+                contract_module,
+		max_stack_height
 	).map_err(|_| vm::Error::Wasm(format!("Wasm contract error: stack limiter failure")))?;
 
 	let data = match params.params_type {

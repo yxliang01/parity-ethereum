@@ -126,7 +126,7 @@ members = [
 	"accounts/ethkey/cli",
 	"accounts/ethstore/cli",
 	"chainspec",
-	"ethcore/wasm/run",
+	"ethcore/wasm/pwasm/run",
 	"ethcore/wasm/ewasm/run",
 	"ethcore/types",
 	"evmbin",

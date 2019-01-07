@@ -19,7 +19,8 @@ use ethtrie::RlpCodec;
 use account_db::Factory as AccountFactory;
 use evm::{Factory as EvmFactory, VMType};
 use vm::{Exec, ActionParams, Schedule};
-use wasm::WasmInterpreter;
+use wasm::{self, WasmKind};
+
 use keccak_hasher::KeccakHasher;
 
 const WASM_MAGIC_NUMBER: &'static [u8; 4] = b"\0asm";
@@ -33,7 +34,7 @@ pub struct VmFactory {
 impl VmFactory {
 	pub fn create(&self, params: ActionParams, schedule: &Schedule, depth: usize) -> Box<Exec> {
 		if schedule.wasm.is_some() && params.code.as_ref().map_or(false, |code| code.len() > 4 && &code[0..4] == WASM_MAGIC_NUMBER) {
-			Box::new(WasmInterpreter::new(params))
+                        wasm::new(WasmKind::PWasm, params)
 		} else {
 			self.evm.create(params, schedule, depth)
 		}

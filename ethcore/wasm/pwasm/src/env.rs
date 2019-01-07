@@ -18,10 +18,9 @@
 
 use std::cell::RefCell;
 use vm::WasmCosts;
-use wasmi::{
-	self, Signature, Error, FuncRef, FuncInstance, MemoryDescriptor,
-	MemoryRef, MemoryInstance, memory_units,
-};
+use wasmi::{self, Signature, Error, FuncRef, MemoryDescriptor, MemoryRef};
+
+use wasm_exec_common::env as wasm_env;
 
 /// Internal ids all functions runtime supports. This is just a glue for wasmi interpreter
 /// that lacks high-level api and later will be factored out
@@ -58,10 +57,8 @@ pub mod ids {
 /// Signatures of all functions runtime supports. The actual dispatch happens at
 /// impl runtime::Runtime methods.
 pub mod signatures {
-	use wasmi::{self, ValueType};
 	use wasmi::ValueType::*;
-
-	pub struct StaticSignature(pub &'static [ValueType], pub Option<ValueType>);
+        use super::wasm_env::StaticSignature;
 
 	pub const STORAGE_READ: StaticSignature = StaticSignature(
 		&[I32, I32],
@@ -192,16 +189,6 @@ pub mod signatures {
 		&[I32, I32, I32, I32],
 		None,
 	);
-
-	impl Into<wasmi::Signature> for StaticSignature {
-		fn into(self) -> wasmi::Signature {
-			wasmi::Signature::new(self.0, self.1)
-		}
-	}
-}
-
-fn host(signature: signatures::StaticSignature, idx: usize) -> FuncRef {
-	FuncInstance::alloc_host(signature.into(), idx)
 }
 
 /// Import resolver for wasmi
@@ -236,12 +223,7 @@ impl ImportResolver {
 		{
 			let mut mem_ref = self.memory.borrow_mut();
 			if mem_ref.is_none() {
-				*mem_ref = Some(
-					MemoryInstance::alloc(
-						memory_units::Pages(0),
-						Some(memory_units::Pages(0)),
-					).expect("Memory allocation (0, 0) should not fail; qed")
-				);
+				*mem_ref = Some(wasm_env::alloc_empty_memory());
 			}
 		}
 
@@ -256,6 +238,8 @@ impl ImportResolver {
 
 impl wasmi::ModuleImportResolver for ImportResolver {
 	fn resolve_func(&self, field_name: &str, _signature: &Signature) -> Result<FuncRef, Error> {
+                use self::wasm_env::alloc_func as host;
+
 		let func_ref = match field_name {
 			"storage_read" => host(signatures::STORAGE_READ, ids::STORAGE_READ_FUNC),
 			"storage_write" => host(signatures::STORAGE_WRITE, ids::STORAGE_WRITE_FUNC),
@@ -284,7 +268,7 @@ impl wasmi::ModuleImportResolver for ImportResolver {
 			"create2" if self.have_create2 => host(signatures::CREATE2, ids::CREATE2_FUNC),
 			"gasleft" if self.have_gasleft => host(signatures::GASLEFT, ids::GASLEFT_FUNC),
 			_ => {
-				return Err(wasmi::Error::Instantiation(
+				return Err(Error::Instantiation(
 					format!("Export {} not found", field_name),
 				))
 			}
@@ -299,18 +283,9 @@ impl wasmi::ModuleImportResolver for ImportResolver {
 		descriptor: &MemoryDescriptor,
 	) -> Result<MemoryRef, Error> {
 		if field_name == "memory" {
-			let effective_max = descriptor.maximum().unwrap_or(self.max_memory + 1);
-			if descriptor.initial() > self.max_memory || effective_max > self.max_memory
-			{
-				Err(Error::Instantiation("Module requested too much memory".to_owned()))
-			} else {
-				let mem = MemoryInstance::alloc(
-					memory_units::Pages(descriptor.initial() as usize),
-					descriptor.maximum().map(|x| memory_units::Pages(x as usize)),
-				)?;
-				*self.memory.borrow_mut() = Some(mem.clone());
-				Ok(mem)
-			}
+                        let mem = wasm_env::alloc_memory(descriptor, self.max_memory)?;
+                        *self.memory.borrow_mut() = Some(mem.clone());
+                        Ok(mem)
 		} else {
 			Err(Error::Instantiation("Memory imported under unknown name".to_owned()))
 		}

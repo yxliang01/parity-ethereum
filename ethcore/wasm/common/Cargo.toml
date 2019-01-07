@@ -1,0 +1,16 @@
+[package]
+name = "wasm-exec-common"
+version = "0.0.1"
+authors = ["Parity Technologies <admin@parity.io>"]
+
+[dependencies]
+byteorder = "1.0"
+ethereum-types = "0.4"
+wasmi = "0.3.0"
+pwasm-utils = "0.2.2"
+parity-wasm = "0.31"
+vm = { path = "../../vm" }
+
+#log = "0.4"
+#libc = "0.2"
+#ethcore-logger = { path = "../../../logger" }

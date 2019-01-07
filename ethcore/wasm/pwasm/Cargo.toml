@@ -1,6 +1,6 @@
 [package]
-name = "wasm"
-version = "0.1.0"
+name = "pwasm-exec"
+version = "0.0.1"
 authors = ["Parity Technologies <admin@parity.io>"]
 
 [dependencies]
@@ -10,9 +10,7 @@ log = "0.4"
 parity-wasm = "0.31"
 libc = "0.2"
 pwasm-utils = "0.2.2"
-vm = { path = "../vm" }
-ethcore-logger = { path = "../../logger" }
+vm = { path = "../../vm" }
 wasmi = "0.3.0"
-pwasm-exec = { path = "pwasm" }
-ewasm-exec = { path = "ewasm" }
-wasm-exec-common = { path = "common" }
+ethcore-logger = { path = "../../../logger" }
+wasm-exec-common = { path = "../common" }

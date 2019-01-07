@@ -140,7 +140,6 @@ pub fn construct(
 
 pub fn run_fixture(fixture: &Fixture) -> Vec<Fail> {
 	let mut params = ActionParams::default();
-
 	let source = match load_code(fixture.source.as_ref()) {
 		Ok(code) => code,
 		Err(e) => { return Fail::load(e); },
