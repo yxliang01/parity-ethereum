@@ -61,7 +61,7 @@ impl<'a> Callback for JavaCallback<'a> {
 }
 
 #[no_mangle]
-pub extern "system" fn Java_io_parity_ethereum_Parity_configFromCli(env: JNIEnv, _: JClass, cli: jobjectArray) -> jlong {
+pub unsafe extern "system" fn Java_io_parity_ethereum_Parity_configFromCli(env: JNIEnv, _: JClass, cli: jobjectArray) -> jlong {
 	let cli_len = env.get_array_length(cli).expect("invalid Java bindings") as usize;
 
 	let mut jni_strings = Vec::with_capacity(cli_len);
@@ -85,8 +85,7 @@ pub extern "system" fn Java_io_parity_ethereum_Parity_configFromCli(env: JNIEnv,
 	}
 
 	let mut out = ptr::null_mut();
-	// input verified
-	match unsafe { parity_config_from_cli(opts.as_ptr(), opts_lens.as_ptr(), cli_len, &mut out) } {
+	match parity_config_from_cli(opts.as_ptr(), opts_lens.as_ptr(), cli_len, &mut out) {
 		0 => out as jlong,
 		_ => {
 			let _ = env.throw_new("java/lang/Exception", "failed to create config object");
@@ -96,15 +95,14 @@ pub extern "system" fn Java_io_parity_ethereum_Parity_configFromCli(env: JNIEnv,
 }
 
 #[no_mangle]
-pub extern "system" fn Java_io_parity_ethereum_Parity_build(env: JNIEnv, _: JClass, config: va_list) -> jlong {
+pub unsafe extern "system" fn Java_io_parity_ethereum_Parity_build(env: JNIEnv, _: JClass, config: va_list) -> jlong {
 	let params = ParityParams {
 		configuration: config,
-		.. unsafe { mem::zeroed() }
+		.. mem::zeroed()
 	};
 
 	let mut out = ptr::null_mut();
-	// input verified
-	match unsafe { parity_start(&params, &mut out) } {
+	match parity_start(&params, &mut out) {
 		0 => out as jlong,
 		_ => {
 			let _ = env.throw_new("java/lang/Exception", "failed to start Parity");
