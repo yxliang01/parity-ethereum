@@ -10,7 +10,6 @@ echo "CARGO_TARGET:     " $CARGO_TARGET
 echo "CC:               " $CC
 echo "CXX:              " $CXX
 
-# Pierre suggested to get rid of it
 # echo "__________CARGO CONFIG__________"
 # if [ "${CARGO_TARGET}" = "armv7-linux-androideabi" ]
 # then
@@ -26,15 +25,17 @@ echo "CXX:              " $CXX
 
 
 echo "_____ Building target: "$CARGO_TARGET" _____"
-time cargo build --target $CARGO_TARGET --release --features final
+if [ "${CARGO_TARGET}" = "armv7-linux-androideabi" ]
+then
 # only thing we need for android
-time cargo build --target $CARGO_TARGET --release -p parity-clib --features final
-
-# not needed for android build
-time cargo build --target $CARGO_TARGET --release -p evmbin
-time cargo build --target $CARGO_TARGET --release -p ethstore-cli
-time cargo build --target $CARGO_TARGET --release -p ethkey-cli
-time cargo build --target $CARGO_TARGET --release -p whisper-cli
+  time cargo build --target $CARGO_TARGET --release -p parity-clib --features final
+else
+  time cargo build --target $CARGO_TARGET --release --features final
+  time cargo build --target $CARGO_TARGET --release -p evmbin
+  time cargo build --target $CARGO_TARGET --release -p ethstore-cli
+  time cargo build --target $CARGO_TARGET --release -p ethkey-cli
+  time cargo build --target $CARGO_TARGET --release -p whisper-cli
+fi
 
 echo "_____ Post-processing binaries _____"
 rm -rf artifacts
