@@ -70,7 +70,7 @@ pub struct VMExecutedOperation {
 	pub used: u64,
 	/// The stack item placed, if any.
 	pub push: Vec<U256>,
-	/// The stack item removed, if any.
+	/// The stack item removed, if any. The removing order is from left to right.
 	pub pop: Vec<U256>,
 	/// If altered, the memory delta.
 	#[serde(rename="mem")]
