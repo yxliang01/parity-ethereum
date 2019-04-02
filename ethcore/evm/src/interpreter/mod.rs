@@ -287,6 +287,7 @@ impl<Cost: CostType> Interpreter<Cost> {
 			mem: Vec::new(),
 			return_data: ReturnData::empty(),
 			last_stack_ret_len: 0,
+			last_stack_pop: Vec::new(),
 			resume_output_range: None,
 			resume_result: None,
 			_type: PhantomData,
@@ -380,7 +381,7 @@ impl<Cost: CostType> Interpreter<Cost> {
 			ext.trace_executed(
 				self.gasometer.as_mut().expect(GASOMETER_PROOF).current_gas.as_u256(),
 				self.stack.peek_top(self.last_stack_ret_len),
-				self.last_stack_pop,
+				&self.last_stack_pop,
 				&self.mem,
 			);
 		}
