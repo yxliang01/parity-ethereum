@@ -188,7 +188,7 @@ pub struct Interpreter<Cost: CostType> {
 	resume_output_range: Option<(U256, U256)>,
 	resume_result: Option<InstructionResult<Cost>>,
 	last_stack_ret_len: usize,
-	last_stack_pop: &[U256],
+	last_stack_pop: [U256],
 	_type: PhantomData<Cost>,
 }
 
