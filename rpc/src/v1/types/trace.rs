@@ -70,6 +70,8 @@ pub struct VMExecutedOperation {
 	pub used: u64,
 	/// The stack item placed, if any.
 	pub push: Vec<U256>,
+	/// The stack item removed, if any.
+	pub pop: Vec<U256>,
 	/// If altered, the memory delta.
 	#[serde(rename="mem")]
 	pub mem: Option<MemoryDiff>,
@@ -83,6 +85,7 @@ impl From<et::VMExecutedOperation> for VMExecutedOperation {
 		VMExecutedOperation {
 			used: c.gas_used.low_u64(),
 			push: c.stack_push.into_iter().map(Into::into).collect(),
+			pop: c.stack_pop.into_iter().map(Into::into).collect(),
 			mem: c.mem_diff.map(Into::into),
 			store: c.store_diff.map(Into::into),
 		}
