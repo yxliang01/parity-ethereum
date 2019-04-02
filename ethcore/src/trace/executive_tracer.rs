@@ -244,13 +244,14 @@ impl VMTracer for ExecutiveVMTracer {
 		self.last_store_written = store_written;
 	}
 
-	fn trace_executed(&mut self, gas_used: U256, stack_push: &[U256], mem: &[u8]) {
+	fn trace_executed(&mut self, gas_used: U256, stack_push: &[U256], stack_pop: &[U256], mem: &[u8]) {
 		let mem_diff = self.last_mem_written.take().map(|(o, s)| (o, &(mem[o..o+s])));
 		let store_diff = self.last_store_written.take();
 		Self::with_trace_in_depth(&mut self.data, self.depth, move |trace| {
 			let ex = VMExecutedOperation {
 				gas_used: gas_used,
 				stack_push: stack_push.iter().cloned().collect(),
+				stack_pop: stack_pop.iter().cloned().collect(),
 				mem_diff: mem_diff.map(|(s, r)| MemoryDiff { offset: s, data: r.iter().cloned().collect() }),
 				store_diff: store_diff.map(|(l, v)| StorageDiff { location: l, value: v }),
 			};
