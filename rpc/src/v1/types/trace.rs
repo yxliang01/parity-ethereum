@@ -97,6 +97,8 @@ impl From<et::VMExecutedOperation> for VMExecutedOperation {
 pub struct VMOperation {
 	/// The program counter.
 	pub pc: usize,
+	/// The instruction code executed
+	pub inst: u8,
 	/// The gas cost for this instruction.
 	pub cost: u64,
 	/// Information concerning the execution of the operation.
@@ -110,6 +112,7 @@ impl From<(et::VMOperation, Option<et::VMTrace>)> for VMOperation {
 	fn from(c: (et::VMOperation, Option<et::VMTrace>)) -> Self {
 		VMOperation {
 			pc: c.0.pc,
+			inst: c.0.instruction,
 			cost: c.0.gas_cost.low_u64(),
 			ex: c.0.executed.map(Into::into),
 			sub: c.1.map(Into::into),

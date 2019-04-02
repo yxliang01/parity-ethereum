@@ -355,9 +355,7 @@ impl<Cost: CostType> Interpreter<Cost> {
 
 				evm_debug!({ self.informant.before_instruction(self.reader.position, instruction, info, &self.gasometer.as_mut().expect(GASOMETER_PROOF).current_gas, &self.stack) });
 
-				let reversedStackPoped = self.stack.peek_top(info.args);
-				reversedStackPoped.reverse();
-				self.last_stack_pop = reversedStackPoped.to_vec();
+				self.last_stack_pop = self.stack.peek_top(info.args).to_vec();
 
 				// Execute instruction
 				let current_gas = self.gasometer.as_mut().expect(GASOMETER_PROOF).current_gas;
