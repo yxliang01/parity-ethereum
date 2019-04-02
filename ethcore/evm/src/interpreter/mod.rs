@@ -188,7 +188,7 @@ pub struct Interpreter<Cost: CostType> {
 	resume_output_range: Option<(U256, U256)>,
 	resume_result: Option<InstructionResult<Cost>>,
 	last_stack_ret_len: usize,
-	last_stack_pop: [U256],
+	last_stack_pop: Vec<U256>,
 	_type: PhantomData<Cost>,
 }
 
@@ -354,7 +354,7 @@ impl<Cost: CostType> Interpreter<Cost> {
 
 				evm_debug!({ self.informant.before_instruction(self.reader.position, instruction, info, &self.gasometer.as_mut().expect(GASOMETER_PROOF).current_gas, &self.stack) });
 
-				self.last_stack_pop = self.stack.peek_top(info.args);
+				self.last_stack_pop = self.stack.peek_top(info.args).to_vec();
 
 				// Execute instruction
 				let current_gas = self.gasometer.as_mut().expect(GASOMETER_PROOF).current_gas;
