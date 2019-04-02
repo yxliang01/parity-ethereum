@@ -397,6 +397,8 @@ pub struct VMExecutedOperation {
 	pub gas_used: U256,
 	/// The stack item placed, if any.
 	pub stack_push: Vec<U256>,
+	/// The stack item removed, if any.
+	pub stack_pop: Vec<U256>,
 	/// If altered, the memory delta.
 	pub mem_diff: Option<MemoryDiff>,
 	/// The altered storage value, if any.
