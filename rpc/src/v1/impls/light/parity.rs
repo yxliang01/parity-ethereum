@@ -240,7 +240,7 @@ impl Parity for ParityClient {
 		Err(errors::light_unimplemented(None))
 	}
 
-	fn get_storage(&self, _: H160, _: Option<u64>, _: Option<H256>, _: Trailing<BlockNumber>) -> Result<Option<Vec<H256>>> {
+	fn list_storage(&self, _: H160, _: Option<u64>, _: Option<H256>, _: Trailing<BlockNumber>) -> Result<Option<Vec<H256>>> {
 		Err(errors::light_unimplemented(None))
 	}
 

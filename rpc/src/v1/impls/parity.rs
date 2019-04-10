@@ -271,12 +271,23 @@ impl<C, M, U, S> Parity for ParityClient<C, M, U> where
 		};
 
 		Ok(self.client
-			.list_storage(number, &address.into(), after.map(Into::into).as_ref(), count)
+			.list_storage_keys(number, &address.into(), after.map(Into::into).as_ref(), count)
 			.map(|a| a.into_iter().map(Into::into).collect()))
 	}
 
-	fn get_storage(&self, address: H160, count: Option<u64>, after: Option<H256>, block_number: Trailing<BlockNumber>) -> Result<Option<Vec<H256>>> {
-		self.list_storage_keys(address, count, after, block_number)
+	fn list_storage(&self, address: H160, count: Option<u64>, after: Option<H256>, block_number: Trailing<BlockNumber>) -> Result<Option<Vec<H256>>> {
+		let number = match block_number.unwrap_or_default() {
+			BlockNumber::Pending => {
+				warn!("BlockNumber::Pending is unsupported");
+				return Ok(None);
+			},
+
+			num => block_number_to_id(num)
+		};
+
+		Ok(self.client
+			.list_storage(number, &address.into(), after.map(Into::into).as_ref(), count)
+			.map(|a| a.into_iter().map(Into::into).collect()))
 	}
 
 	fn encrypt_message(&self, key: H512, phrase: Bytes) -> Result<Bytes> {

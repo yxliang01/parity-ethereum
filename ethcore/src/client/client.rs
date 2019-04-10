@@ -1819,6 +1819,58 @@ impl BlockChainClient for Client {
 		Some(keys)
 	}
 
+	fn list_storage(&self, id: BlockId, account: &Address, after: Option<&H256>, count: Option<u64>) -> Option<Vec<H256>> {
+		if !self.factories.trie.is_fat() {
+			trace!(target: "fatdb", "list_storage: Not a fat DB");
+			return None;
+		}
+
+		let state = match self.state_at(id) {
+			Some(state) => state,
+			_ => return None,
+		};
+
+		let root = match state.storage_root(account) {
+			Ok(Some(root)) => root,
+			_ => return None,
+		};
+
+		let (_, db) = state.drop();
+		let account_db = self.factories.accountdb.readonly(db.as_hashdb(), keccak(account));
+		let trie = match self.factories.trie.readonly(account_db.as_hashdb(), &root) {
+			Ok(trie) => trie,
+			_ => {
+				trace!(target: "fatdb", "list_storage: Couldn't open the DB");
+				return None;
+			}
+		};
+
+		let mut iter = match trie.iter() {
+			Ok(iter) => iter,
+			_ => return None,
+		};
+
+		if let Some(after) = after {
+			if let Err(e) = iter.seek(after) {
+				trace!(target: "fatdb", "list_storage: Couldn't seek the DB: {:?}", e);
+			} else {
+				// Position the iterator after the `after` element
+				iter.next();
+			}
+		}
+
+		let keys = match count {
+			Some(cnt) => iter.filter_map(|item| {
+							item.ok().map(|(key, _)| H256::from_slice(&key))
+						}).take(cnt as usize).collect(),
+			None => iter.filter_map(|item| {
+						item.ok().map(|(key, _)| H256::from_slice(&key))
+					}).collect(),
+		};
+
+		Some(keys)
+	}
+
 	fn transaction(&self, id: TransactionId) -> Option<LocalizedTransaction> {
 		self.transaction_address(id).and_then(|address| self.chain.read().transaction(&address))
 	}
