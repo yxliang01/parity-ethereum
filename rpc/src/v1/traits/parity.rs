@@ -132,6 +132,11 @@ build_rpc_trait! {
 		#[rpc(name = "parity_listStorageKeys")]
 		fn list_storage_keys(&self, H160, Option<u64>, Option<H256>, Trailing<BlockNumber>) -> Result<Option<Vec<H256>>>;
 
+		// Returns storage of the given address (first parameter) if Fat DB is enabled (`--fat-db`),
+		// or null if not.
+		#[rpc(name = "parity_storage")]
+		fn get_storage(&self, H160, Option<u64>, Option<H256>, Trailing<BlockNumber>) -> Result<Option<Vec<H256>>>;
+
 		/// Encrypt some data with a public key under ECIES.
 		/// First parameter is the 512-byte destination public key, second is the message.
 		#[rpc(name = "parity_encryptMessage")]

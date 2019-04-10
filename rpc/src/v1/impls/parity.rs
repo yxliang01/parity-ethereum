@@ -275,6 +275,10 @@ impl<C, M, U, S> Parity for ParityClient<C, M, U> where
 			.map(|a| a.into_iter().map(Into::into).collect()))
 	}
 
+	fn get_storage(&self, address: H160, count: Option<u64>, after: Option<H256>, block_number: Trailing<BlockNumber>) -> Result<Option<Vec<H256>>> {
+		self.list_storage_keys(address, count, after, block_number)
+	}
+
 	fn encrypt_message(&self, key: H512, phrase: Bytes) -> Result<Bytes> {
 		ecies::encrypt(&key.into(), &DEFAULT_MAC, &phrase.0)
 			.map_err(errors::encryption)

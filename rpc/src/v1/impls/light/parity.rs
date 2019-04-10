@@ -240,6 +240,10 @@ impl Parity for ParityClient {
 		Err(errors::light_unimplemented(None))
 	}
 
+	fn get_storage(&self, _: H160, _: Option<u64>, _: Option<H256>, _: Trailing<BlockNumber>) -> Result<Option<Vec<H256>>> {
+		Err(errors::light_unimplemented(None))
+	}
+
 	fn encrypt_message(&self, key: H512, phrase: Bytes) -> Result<Bytes> {
 		ecies::encrypt(&key.into(), &DEFAULT_MAC, &phrase.0)
 			.map_err(errors::encryption)
