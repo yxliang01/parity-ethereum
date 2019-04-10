@@ -1767,9 +1767,9 @@ impl BlockChainClient for Client {
 		Some(accounts)
 	}
 
-	fn list_storage(&self, id: BlockId, account: &Address, after: Option<&H256>, count: Option<u64>) -> Option<Vec<H256>> {
+	fn list_storage_keys(&self, id: BlockId, account: &Address, after: Option<&H256>, count: Option<u64>) -> Option<Vec<H256>> {
 		if !self.factories.trie.is_fat() {
-			trace!(target: "fatdb", "list_storage: Not a fat DB");
+			trace!(target: "fatdb", "list_storage_keys: Not a fat DB");
 			return None;
 		}
 
@@ -1788,7 +1788,7 @@ impl BlockChainClient for Client {
 		let trie = match self.factories.trie.readonly(account_db.as_hashdb(), &root) {
 			Ok(trie) => trie,
 			_ => {
-				trace!(target: "fatdb", "list_storage: Couldn't open the DB");
+				trace!(target: "fatdb", "list_storage_keys: Couldn't open the DB");
 				return None;
 			}
 		};
@@ -1800,7 +1800,7 @@ impl BlockChainClient for Client {
 
 		if let Some(after) = after {
 			if let Err(e) = iter.seek(after) {
-				trace!(target: "fatdb", "list_storage: Couldn't seek the DB: {:?}", e);
+				trace!(target: "fatdb", "list_storage_keys: Couldn't seek the DB: {:?}", e);
 			} else {
 				// Position the iterator after the `after` element
 				iter.next();
