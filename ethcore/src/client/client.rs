@@ -1870,7 +1870,7 @@ impl BlockChainClient for Client {
 		    res
 		};
 
-		let keys = match count {
+		let pairs = match count {
 			Some(cnt) => iter.filter_map(|item| {
 							item.ok().map(|(key, storage)| (H256::from_slice(&key), encode_hex(&storage)))
 						}).take(cnt as usize).collect(),
@@ -1879,7 +1879,7 @@ impl BlockChainClient for Client {
 					}).collect(),
 		};
 
-		Some(keys)
+		Some(pairs)
 	}
 
 	fn transaction(&self, id: TransactionId) -> Option<LocalizedTransaction> {

@@ -17,7 +17,7 @@
 //! Parity-specific rpc implementation.
 use std::sync::Arc;
 use std::str::FromStr;
-use std::collections::{BTreeMap, HashSet};
+use std::collections::{BTreeMap, HashSet, HashMap};
 
 use ethereum_types::Address;
 use version::version_data;
@@ -275,19 +275,27 @@ impl<C, M, U, S> Parity for ParityClient<C, M, U> where
 			.map(|a| a.into_iter().map(Into::into).collect()))
 	}
 
-	fn list_storage(&self, address: H160, count: Option<u64>, after: Option<H256>, block_number: Trailing<BlockNumber>) -> Result<Option<BTreeMap<H256, String>>> {
+	fn list_storage(&self, address: H160, count: Option<u64>, after: Option<H256>, block_number: Trailing<BlockNumber>) -> Result<HashMap<H160, Option<BTreeMap<H256, String>>>> {
 		let number = match block_number.unwrap_or_default() {
 			BlockNumber::Pending => {
 				warn!("BlockNumber::Pending is unsupported");
-				return Ok(None);
+
+				let mut a = HashMap::new();
+				a.insert(address, None);
+				return Ok(a);
 			},
 
 			num => block_number_to_id(num)
 		};
 
-		Ok(self.client
+		let address_before_moved = address.clone();
+		let pairs = self.client
 			.list_storage(number, &address.into(), after.map(Into::into).as_ref(), count)
-			.map(|a| a.into_iter().map(|(key, storage)| (key.into(), storage.into())).collect()))
+			.map(|a| a.into_iter().map(|(key, storage)| (key.into(), storage.into())).collect());
+
+		let mut a = HashMap::new();
+		a.insert(address_before_moved, pairs);
+		Ok(a)
 	}
 
 	fn encrypt_message(&self, key: H512, phrase: Bytes) -> Result<Bytes> {
