@@ -240,7 +240,7 @@ impl Parity for ParityClient {
 		Err(errors::light_unimplemented(None))
 	}
 
-	fn list_storage(&self, _: H160, _: Option<u64>, _: Option<H256>, _: Trailing<BlockNumber>) -> Result<Option<BTreeMap<H256, u64>>> {
+	fn list_storage(&self, _: H160, _: Option<u64>, _: Option<H256>, _: Trailing<BlockNumber>) -> Result<Option<BTreeMap<H256, H256>>> {
 		Err(errors::light_unimplemented(None))
 	}
 

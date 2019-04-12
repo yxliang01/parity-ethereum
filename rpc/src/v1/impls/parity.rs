@@ -275,7 +275,7 @@ impl<C, M, U, S> Parity for ParityClient<C, M, U> where
 			.map(|a| a.into_iter().map(Into::into).collect()))
 	}
 
-	fn list_storage(&self, address: H160, count: Option<u64>, after: Option<H256>, block_number: Trailing<BlockNumber>) -> Result<Option<BTreeMap<H256, u64>>> {
+	fn list_storage(&self, address: H160, count: Option<u64>, after: Option<H256>, block_number: Trailing<BlockNumber>) -> Result<Option<BTreeMap<H256, H256>>> {
 		let number = match block_number.unwrap_or_default() {
 			BlockNumber::Pending => {
 				warn!("BlockNumber::Pending is unsupported");
@@ -287,7 +287,7 @@ impl<C, M, U, S> Parity for ParityClient<C, M, U> where
 
 		Ok(self.client
 			.list_storage(number, &address.into(), after.map(Into::into).as_ref(), count)
-			.map(|a| a.into_iter().map(Into::into).collect()))
+			.map(|a| a.into_iter().map(|(key, storage)| (key.into(), storage.into())).collect()))
 	}
 
 	fn encrypt_message(&self, key: H512, phrase: Bytes) -> Result<Bytes> {
