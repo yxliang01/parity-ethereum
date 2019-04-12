@@ -274,7 +274,7 @@ pub trait BlockChainClient : Sync + Send + AccountData + BlockChain + CallContra
 
 	/// Get a list of all storage in the block `id`, if fat DB is in operation, otherwise `None`.
 	/// If `after` is set the list starts with the following item.
-	fn list_storage(&self, id: BlockId, account: &Address, after: Option<&H256>, count: Option<u64>) -> Option<BTreeMap<H256, H256>>;
+	fn list_storage(&self, id: BlockId, account: &Address, after: Option<&H256>, count: Option<u64>) -> Option<BTreeMap<H256, String>>;
 
 	/// Get transaction with given hash.
 	fn transaction(&self, id: TransactionId) -> Option<LocalizedTransaction>;
