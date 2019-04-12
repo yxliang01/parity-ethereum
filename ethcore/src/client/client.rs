@@ -1819,7 +1819,7 @@ impl BlockChainClient for Client {
 		Some(keys)
 	}
 
-	fn list_storage(&self, id: BlockId, account: &Address, after: Option<&H256>, count: Option<u64>) -> Option<Vec<H256>> {
+	fn list_storage(&self, id: BlockId, account: &Address, after: Option<&H256>, count: Option<u64>) -> Option<BTreeMap<H256, u64>> {
 		if !self.factories.trie.is_fat() {
 			trace!(target: "fatdb", "list_storage: Not a fat DB");
 			return None;
