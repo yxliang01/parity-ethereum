@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
+use std::fmt::Write;
 use std::collections::{HashSet, BTreeMap, VecDeque};
 use std::cmp;
 use std::str::FromStr;
@@ -1859,12 +1860,22 @@ impl BlockChainClient for Client {
 			}
 		}
 
+		fn encode_hex(bytes: &[u8]) -> String {
+    		let mut res = String::from("0x");
+		    let mut s = String::with_capacity(bytes.len() * 2);
+		    for &b in bytes {
+		        write!(&mut s, "{:02x}", b);
+		    }
+		    write!(&mut res, "{}", s);
+		    res
+		};
+
 		let keys = match count {
 			Some(cnt) => iter.filter_map(|item| {
-							item.ok().map(|(key, storage)| (H256::from_slice(&key), "lol"))
+							item.ok().map(|(key, storage)| (H256::from_slice(&key), encode_hex(&storage)))
 						}).take(cnt as usize).collect(),
 			None => iter.filter_map(|item| {
-						item.ok().map(|(key, storage)| (H256::from_slice(&key), "lol"))
+						item.ok().map(|(key, storage)| (H256::from_slice(&key), encode_hex(&storage)))
 					}).collect(),
 		};
 

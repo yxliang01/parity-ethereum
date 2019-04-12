@@ -1,3 +1,7 @@
+
+<!-- 
+ElasticArray128<u8>
+ -->
 # parity
 ## parity_listStorageKeys
 ### original
