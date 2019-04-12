@@ -45,3 +45,6 @@ curl --data '{"method":"parity_listStorageKeys","params":["0xab7c74abC0C4d48d1bd
 ```
 
 ### v2
+```
+curl --data '{"method":"parity_storage","params":[["0xab7c74abC0C4d48d1bdad5DCB26153FC8780f83E"],null,null],"id":1,"jsonrpc":"2.0"}' -H "Content-Type: application/json" -X POST localhost:8545 
+```
