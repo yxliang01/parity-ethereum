@@ -1861,11 +1861,16 @@ impl BlockChainClient for Client {
 		}
 
 		fn encode_hex(bytes: &[u8]) -> String {
-    		let mut res = String::from("0x");
-		    let mut s = String::with_capacity(bytes.len() * 2);
-		    for &b in bytes {
+    		let mut res = String::from("0x0000000000000000000000000000000000000000000000000000000000000000");
+    		let mut actual:&[u8] = &bytes;
+    		if bytes.len()>1 {
+    			actual = &bytes[1..bytes.len()]
+    		};
+		    let mut s = String::with_capacity(actual.len() * 2);
+		    for &b in actual {
 		        write!(&mut s, "{:02x}", b);
 		    }
+		    res.truncate(66-s.len());
 		    write!(&mut res, "{}", s);
 		    res
 		};
