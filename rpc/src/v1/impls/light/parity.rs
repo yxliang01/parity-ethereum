@@ -16,7 +16,7 @@
 
 //! Parity-specific rpc implementation.
 use std::sync::Arc;
-use std::collections::{BTreeMap, HashSet};
+use std::collections::{BTreeMap, HashSet, HashMap};
 
 use version::version_data;
 
@@ -236,7 +236,15 @@ impl Parity for ParityClient {
 		Err(errors::light_unimplemented(None))
 	}
 
-	fn list_storage_keys(&self, _: H160, _: u64, _: Option<H256>, _: Trailing<BlockNumber>) -> Result<Option<Vec<H256>>> {
+	fn list_storage_keys(&self, _: H160, _: Option<u64>, _: Option<H256>, _: Trailing<BlockNumber>) -> Result<Option<Vec<H256>>> {
+		Err(errors::light_unimplemented(None))
+	}
+
+	fn list_storage(&self, _: Vec<H160>, _: Option<u64>, _: Option<H256>, _: Trailing<BlockNumber>) -> Result<HashMap<H160, Option<BTreeMap<H256, String>>>> {
+		Err(errors::light_unimplemented(None))
+	}
+
+	fn list_storage_for_address(&self, _: H160, _: Option<u64>, _: Option<H256>, _: Trailing<BlockNumber>) -> Result<Option<BTreeMap<H256, String>>> {
 		Err(errors::light_unimplemented(None))
 	}
 

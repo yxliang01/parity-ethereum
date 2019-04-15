@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Parity.  If not, see <http://www.gnu.org/licenses/>.
 
+use std::fmt::Write;
 use std::collections::{HashSet, BTreeMap, VecDeque};
 use std::cmp;
 use std::str::FromStr;
@@ -1767,7 +1768,59 @@ impl BlockChainClient for Client {
 		Some(accounts)
 	}
 
-	fn list_storage(&self, id: BlockId, account: &Address, after: Option<&H256>, count: u64) -> Option<Vec<H256>> {
+	fn list_storage_keys(&self, id: BlockId, account: &Address, after: Option<&H256>, count: Option<u64>) -> Option<Vec<H256>> {
+		if !self.factories.trie.is_fat() {
+			trace!(target: "fatdb", "list_storage_keys: Not a fat DB");
+			return None;
+		}
+
+		let state = match self.state_at(id) {
+			Some(state) => state,
+			_ => return None,
+		};
+
+		let root = match state.storage_root(account) {
+			Ok(Some(root)) => root,
+			_ => return None,
+		};
+
+		let (_, db) = state.drop();
+		let account_db = self.factories.accountdb.readonly(db.as_hashdb(), keccak(account));
+		let trie = match self.factories.trie.readonly(account_db.as_hashdb(), &root) {
+			Ok(trie) => trie,
+			_ => {
+				trace!(target: "fatdb", "list_storage_keys: Couldn't open the DB");
+				return None;
+			}
+		};
+
+		let mut iter = match trie.iter() {
+			Ok(iter) => iter,
+			_ => return None,
+		};
+
+		if let Some(after) = after {
+			if let Err(e) = iter.seek(after) {
+				trace!(target: "fatdb", "list_storage_keys: Couldn't seek the DB: {:?}", e);
+			} else {
+				// Position the iterator after the `after` element
+				iter.next();
+			}
+		}
+
+		let keys = match count {
+			Some(cnt) => iter.filter_map(|item| {
+							item.ok().map(|(key, _)| H256::from_slice(&key))
+						}).take(cnt as usize).collect(),
+			None => iter.filter_map(|item| {
+						item.ok().map(|(key, _)| H256::from_slice(&key))
+					}).collect(),
+		};
+
+		Some(keys)
+	}
+
+	fn list_storage(&self, id: BlockId, account: &Address, after: Option<&H256>, count: Option<u64>) -> Option<BTreeMap<H256, String>> {
 		if !self.factories.trie.is_fat() {
 			trace!(target: "fatdb", "list_storage: Not a fat DB");
 			return None;
@@ -1807,11 +1860,31 @@ impl BlockChainClient for Client {
 			}
 		}
 
-		let keys = iter.filter_map(|item| {
-			item.ok().map(|(key, _)| H256::from_slice(&key))
-		}).take(count as usize).collect();
+		fn encode_hex(bytes: &[u8]) -> String {
+    		let mut res = String::from("0x0000000000000000000000000000000000000000000000000000000000000000");
+    		let mut actual:&[u8] = &bytes;
+    		if bytes.len()>1 {
+    			actual = &bytes[1..bytes.len()]
+    		};
+		    let mut s = String::with_capacity(actual.len() * 2);
+		    for &b in actual {
+		        write!(&mut s, "{:02x}", b);
+		    }
+		    res.truncate(66-s.len());
+		    write!(&mut res, "{}", s);
+		    res
+		};
 
-		Some(keys)
+		let pairs = iter.filter_map(|item| {
+							item.ok().map(|(key, storage)| (H256::from_slice(&key), encode_hex(&storage)))
+						});
+
+		let result = match count {
+			Some(cnt) => pairs.take(cnt as usize).collect(),
+			None => pairs.collect(),
+		};
+
+		Some(result)
 	}
 
 	fn transaction(&self, id: TransactionId) -> Option<LocalizedTransaction> {

@@ -17,7 +17,7 @@
 //! Parity-specific rpc implementation.
 use std::sync::Arc;
 use std::str::FromStr;
-use std::collections::{BTreeMap, HashSet};
+use std::collections::{BTreeMap, HashSet, HashMap};
 
 use ethereum_types::Address;
 use version::version_data;
@@ -260,7 +260,7 @@ impl<C, M, U, S> Parity for ParityClient<C, M, U> where
 			.map(|a| a.into_iter().map(Into::into).collect()))
 	}
 
-	fn list_storage_keys(&self, address: H160, count: u64, after: Option<H256>, block_number: Trailing<BlockNumber>) -> Result<Option<Vec<H256>>> {
+	fn list_storage_keys(&self, address: H160, count: Option<u64>, after: Option<H256>, block_number: Trailing<BlockNumber>) -> Result<Option<Vec<H256>>> {
 		let number = match block_number.unwrap_or_default() {
 			BlockNumber::Pending => {
 				warn!("BlockNumber::Pending is unsupported");
@@ -271,8 +271,47 @@ impl<C, M, U, S> Parity for ParityClient<C, M, U> where
 		};
 
 		Ok(self.client
-			.list_storage(number, &address.into(), after.map(Into::into).as_ref(), count)
+			.list_storage_keys(number, &address.into(), after.map(Into::into).as_ref(), count)
 			.map(|a| a.into_iter().map(Into::into).collect()))
+	}
+
+	fn list_storage(&self, addresses: Vec<H160>, count: Option<u64>, after: Option<H256>, block_number: Trailing<BlockNumber>) -> Result<HashMap<H160, Option<BTreeMap<H256, String>>>> {
+		let mut map = HashMap::new();
+		let option_block_number:Option<BlockNumber> = block_number.into();
+
+		for address in addresses {
+			let address_cloned = address.clone();
+			let after_cloned = after.clone();
+			let option_block_number_cloned = option_block_number.clone();
+			let new_block_number:Trailing<BlockNumber> = option_block_number_cloned.into();
+
+			let sub = match self.list_storage_for_address(address, count, after_cloned, new_block_number) {
+				Ok(storage) => storage,
+				Err(_) => None
+			};
+
+			map.insert(address_cloned, sub);
+		}
+
+		Ok(map)
+	}
+
+	fn list_storage_for_address(&self, address: H160, count: Option<u64>, after: Option<H256>, block_number: Trailing<BlockNumber>) -> Result<Option<BTreeMap<H256, String>>> {
+		let number = match block_number.unwrap_or_default() {
+			BlockNumber::Pending => {
+				warn!("BlockNumber::Pending is unsupported");
+
+				return Ok(None);
+			},
+
+			num => block_number_to_id(num)
+		};
+
+		let pairs = self.client
+			.list_storage(number, &address.into(), after.map(Into::into).as_ref(), count)
+			.map(|a| a.into_iter().map(|(key, storage)| (key.into(), storage.into())).collect());
+
+		Ok(pairs)
 	}
 
 	fn encrypt_message(&self, key: H512, phrase: Bytes) -> Result<Bytes> {

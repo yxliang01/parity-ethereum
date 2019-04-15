@@ -667,9 +667,14 @@ impl BlockChainClient for TestBlockChainClient {
 		None
 	}
 
-	fn list_storage(&self, _id: BlockId, _account: &Address, _after: Option<&H256>, _count: u64) -> Option<Vec<H256>> {
+	fn list_storage_keys(&self, _id: BlockId, _account: &Address, _after: Option<&H256>, _count: Option<u64>) -> Option<Vec<H256>> {
 		None
 	}
+
+	fn list_storage(&self, _id: BlockId, _account: &Address, _after: Option<&H256>, _count: Option<u64>) -> Option<BTreeMap<H256, String>> {
+		None
+	}
+
 	fn transaction(&self, _id: TransactionId) -> Option<LocalizedTransaction> {
 		None	// Simple default.
 	}
