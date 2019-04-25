@@ -328,6 +328,10 @@ pub trait BlockChainClient : Sync + Send + AccountData + BlockChain + CallContra
 	/// Replays all the transactions in a given block for inspection.
 	fn replay_block_transactions(&self, block: BlockId, analytics: CallAnalytics) -> Result<Box<Iterator<Item = (H256, Executed)>>, CallError>;
 
+	// XL_TODO
+	/// Replays until a given transaction for inspection.
+	fn replay_with_state_until(&self, t: TransactionId, analytics: CallAnalytics) -> Result<Executed, CallError>;
+
 	/// Returns traces matching given filter.
 	fn filter_traces(&self, filter: TraceFilter) -> Option<Vec<LocalizedTrace>>;
 

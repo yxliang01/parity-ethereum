@@ -1597,6 +1597,7 @@ impl BadBlocks for Client {
 	}
 }
 
+// XL_TODO:
 impl BlockChainClient for Client {
 	fn replay(&self, id: TransactionId, analytics: CallAnalytics) -> Result<Executed, CallError> {
 		let address = self.transaction_address(id).ok_or(CallError::TransactionNotFound)?;
@@ -1625,6 +1626,14 @@ impl BlockChainClient for Client {
 				env_info.gas_used = env_info.gas_used + x.gas_used;
 				(transaction_hash, x)
 			})))
+	}
+
+	fn replay_with_state_until(&self, id: TransactionId, analytics: CallAnalytics) -> Result<Executed, CallError> {
+		let address = self.transaction_address(id).ok_or(CallError::TransactionNotFound)?;
+		let block = BlockId::Hash(address.block_hash);
+
+		const PROOF: &'static str = "The transaction address contains a valid index within block; qed";
+		Ok(self.replay_block_transactions(block, analytics)?.nth(address.index).expect(PROOF).1)
 	}
 
 	fn mode(&self) -> Mode {
@@ -1888,6 +1897,24 @@ impl BlockChainClient for Client {
 	}
 
 	fn list_storage_before_tx(&self, tx_hash: H256, account: &Address, after: Option<&H256>, count: Option<u64>) -> Option<BTreeMap<H256, String>> {
+		if !self.factories.trie.is_fat() {
+			trace!(target: "fatdb", "list_storage: Not a fat DB");
+			return None;
+		}
+
+
+		let tx_address = self.transaction_address(TransactionId::Hash(tx_hash))?;
+		let block_hash = tx_address.block_hash;
+
+		// XL_TODO: get block height
+		let state = match self.state_at(BlockId::Number(1)/*block_hash*/) {
+			Some(state) => state,
+			_ => return None,
+		};
+
+		// XL_TODO: mut state by replay until
+
+
 		None
 	}
 
