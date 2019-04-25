@@ -675,6 +675,10 @@ impl BlockChainClient for TestBlockChainClient {
 		None
 	}
 
+	fn list_storage_before_tx(&self, _tx_hash: H256, _account: &Address, _after: Option<&H256>, _count: Option<u64>) -> Option<BTreeMap<H256, String>> {
+		None
+	}
+
 	fn transaction(&self, _id: TransactionId) -> Option<LocalizedTransaction> {
 		None	// Simple default.
 	}

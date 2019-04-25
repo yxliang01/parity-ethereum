@@ -276,6 +276,10 @@ pub trait BlockChainClient : Sync + Send + AccountData + BlockChain + CallContra
 	/// If `after` is set the list starts with the following item.
 	fn list_storage_after_block(&self, id: BlockId, account: &Address, after: Option<&H256>, count: Option<u64>) -> Option<BTreeMap<H256, String>>;
 
+	/// Get a list of all storage before a specific tx happening, if fat DB is in operation, otherwise `None`.
+	/// If `after` is set the list starts with the following item.
+	fn list_storage_before_tx(&self, tx_hash: H256, account: &Address, after: Option<&H256>, count: Option<u64>) -> Option<BTreeMap<H256, String>>;
+
 	/// Get transaction with given hash.
 	fn transaction(&self, id: TransactionId) -> Option<LocalizedTransaction>;
 

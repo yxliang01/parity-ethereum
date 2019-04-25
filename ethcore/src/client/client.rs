@@ -1887,6 +1887,10 @@ impl BlockChainClient for Client {
 		Some(result)
 	}
 
+	fn list_storage_before_tx(&self, tx_hash: H256, account: &Address, after: Option<&H256>, count: Option<u64>) -> Option<BTreeMap<H256, String>> {
+		None
+	}
+
 	fn transaction(&self, id: TransactionId) -> Option<LocalizedTransaction> {
 		self.transaction_address(id).and_then(|address| self.chain.read().transaction(&address))
 	}
