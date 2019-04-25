@@ -671,7 +671,7 @@ impl BlockChainClient for TestBlockChainClient {
 		None
 	}
 
-	fn list_storage(&self, _id: BlockId, _account: &Address, _after: Option<&H256>, _count: Option<u64>) -> Option<BTreeMap<H256, String>> {
+	fn list_storage_after_block(&self, _id: BlockId, _account: &Address, _after: Option<&H256>, _count: Option<u64>) -> Option<BTreeMap<H256, String>> {
 		None
 	}
 
