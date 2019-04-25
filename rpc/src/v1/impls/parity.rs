@@ -314,6 +314,10 @@ impl<C, M, U, S> Parity for ParityClient<C, M, U> where
 		Ok(pairs)
 	}
 
+	fn list_address_storage_before(&self, address: H160, count: Option<u64>, after: Option<H256>, beforeTx: H256) -> Result<Option<BTreeMap<H256, String>>> {
+		Ok(None)
+	}
+
 	fn encrypt_message(&self, key: H512, phrase: Bytes) -> Result<Bytes> {
 		ecies::encrypt(&key.into(), &DEFAULT_MAC, &phrase.0)
 			.map_err(errors::encryption)

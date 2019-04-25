@@ -141,6 +141,11 @@ build_rpc_trait! {
 		// or null if not.
 		#[rpc(name = "parity_storageForAddress")]
 		fn list_storage_for_address(&self, H160, Option<u64>, Option<H256>, Trailing<BlockNumber>) -> Result<Option<BTreeMap<H256, String>>>;
+		
+		// Returns before_tx-versioned storage of the given address (first parameter) if Fat DB is enabled (`--fat-db`),
+		// or null if not.
+		#[rpc(name = "parity_storageTx")]
+		fn list_address_storage_before(&self, H160, Option<u64>, Option<H256>, H256) -> Result<Option<BTreeMap<H256, String>>>;
 
 		/// Encrypt some data with a public key under ECIES.
 		/// First parameter is the 512-byte destination public key, second is the message.
