@@ -637,7 +637,7 @@ impl BlockChainClient for TestBlockChainClient {
 		Ok(Box::new(self.traces.read().clone().unwrap().into_iter().map(|t| t.transaction_hash.unwrap_or(H256::new())).zip(self.execution_result.read().clone().unwrap().into_iter())))
 	}
 
-	fn state_before_tx(&self, id: TransactionId) -> Option<State<StateDB>> {
+	fn state_before_tx(&self, _id: TransactionId) -> Option<State<StateDB>> {
 		None
 	}
 
