@@ -1633,7 +1633,6 @@ impl BlockChainClient for Client {
 		let mut env_info = self.env_info(block)?;
 		let body = self.block_body(block)?;
 		let mut state = self.state_at_beginning(block)?;
-		// XL_TODO: compare idx
 		let txs = body.transactions();
 		let engine = self.engine.clone();
 		let analytics = CallAnalytics {
