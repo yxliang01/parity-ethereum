@@ -1628,11 +1628,10 @@ impl BlockChainClient for Client {
 	}
 
 	fn state_before_tx(&self, id: TransactionId) -> Option<State<StateDB>> {
-		let address = self.transaction_address(id)?;
-		let block = BlockId::Hash(address.block_hash);
+		let tx_address = self.transaction_address(id)?;
+		let block = BlockId::Hash(tx_address.block_hash);
 		let mut env_info = self.env_info(block)?;
 		let body = self.block_body(block)?;
-		// XL_TODO: fix moved after used
 		let mut state = self.state_at_beginning(block)?;
 		// XL_TODO: compare idx
 		let txs = body.transactions();
@@ -1646,15 +1645,16 @@ impl BlockChainClient for Client {
 		const PROOF: &'static str = "Transactions fetched from blockchain; blockchain transactions are valid; qed";
 		const EXECUTE_PROOF: &'static str = "Transaction replayed; qed";
 
-		txs.into_iter()
-			.map(move |t| {
-				let transaction_hash = t.hash();
-				let t = SignedTransaction::new(t).expect(PROOF);
-				let machine = engine.machine();
-				let x = Self::do_virtual_call(machine, &env_info, &mut state, &t, analytics).expect(EXECUTE_PROOF);
-				env_info.gas_used = env_info.gas_used + x.gas_used;
-				(transaction_hash, x)
-			});
+		let mut i = 0;
+		for t in txs {
+			if i >= tx_address.index {break;}
+
+			let t = SignedTransaction::new(t).expect(PROOF);
+			let machine = engine.machine();
+			let x = Self::do_virtual_call(machine, &env_info, &mut state, &t, analytics).expect(EXECUTE_PROOF);
+			env_info.gas_used = env_info.gas_used + x.gas_used;
+			i+=1;
+		};
 
 		Some(state)
 	}
