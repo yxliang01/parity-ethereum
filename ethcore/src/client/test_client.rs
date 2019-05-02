@@ -64,7 +64,7 @@ use header::Header;
 use encoded;
 use engines::EthEngine;
 use ethtrie;
-use state::StateInfo;
+use state::{StateInfo, State};
 use views::BlockView;
 
 /// Test client.
@@ -637,8 +637,8 @@ impl BlockChainClient for TestBlockChainClient {
 		Ok(Box::new(self.traces.read().clone().unwrap().into_iter().map(|t| t.transaction_hash.unwrap_or(H256::new())).zip(self.execution_result.read().clone().unwrap().into_iter())))
 	}
 
-	fn replay_with_state_until(&self, _id: TransactionId, _analytics: CallAnalytics) -> Result<Executed, CallError> {
-		self.execution_result.read().clone().unwrap()
+	fn state_before_tx(&self, id: TransactionId) -> Option<State<StateDB>> {
+		None
 	}
 
 	fn block_total_difficulty(&self, _id: BlockId) -> Option<U256> {
