@@ -1632,23 +1632,29 @@ impl BlockChainClient for Client {
 		let block = BlockId::Hash(address.block_hash);
 		let mut env_info = self.env_info(block)?;
 		let body = self.block_body(block)?;
+		// XL_TODO: fix moved after used
 		let mut state = self.state_at_beginning(block)?;
 		// XL_TODO: compare idx
 		let txs = body.transactions();
 		let engine = self.engine.clone();
+		let analytics = CallAnalytics {
+							transaction_tracing: true,
+							vm_tracing: true,
+							state_diffing: true
+						};
 
 		const PROOF: &'static str = "Transactions fetched from blockchain; blockchain transactions are valid; qed";
 		const EXECUTE_PROOF: &'static str = "Transaction replayed; qed";
 
-		// txs.into_iter()
-		// 	.map(move |t| {
-		// 		let transaction_hash = t.hash();
-		// 		let t = SignedTransaction::new(t).expect(PROOF);
-		// 		let machine = engine.machine();
-		// 		let x = Self::do_virtual_call(machine, &env_info, &mut state, &t, analytics).expect(EXECUTE_PROOF);
-		// 		env_info.gas_used = env_info.gas_used + x.gas_used;
-		// 		(transaction_hash, x)
-		// 	});
+		txs.into_iter()
+			.map(move |t| {
+				let transaction_hash = t.hash();
+				let t = SignedTransaction::new(t).expect(PROOF);
+				let machine = engine.machine();
+				let x = Self::do_virtual_call(machine, &env_info, &mut state, &t, analytics).expect(EXECUTE_PROOF);
+				env_info.gas_used = env_info.gas_used + x.gas_used;
+				(transaction_hash, x)
+			});
 
 		Some(state)
 	}
