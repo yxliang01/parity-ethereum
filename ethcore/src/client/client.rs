@@ -1902,12 +1902,11 @@ impl BlockChainClient for Client {
 			return None;
 		}
 
-
 		let tx_address = self.transaction_address(TransactionId::Hash(tx_hash))?;
 		let block_hash = tx_address.block_hash;
+		let _tx_idx = tx_address.index;
 
-		// XL_TODO: get block height
-		let state = match self.state_at(BlockId::Number(1)/*block_hash*/) {
+		let state = match self.state_at_beginning(BlockId::Hash(block_hash)) {
 			Some(state) => state,
 			_ => return None,
 		};
