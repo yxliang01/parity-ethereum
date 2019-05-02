@@ -329,7 +329,7 @@ pub trait BlockChainClient : Sync + Send + AccountData + BlockChain + CallContra
 	/// Replays all the transactions in a given block for inspection.
 	fn replay_block_transactions(&self, block: BlockId, analytics: CallAnalytics) -> Result<Box<Iterator<Item = (H256, Executed)>>, CallError>;
 
-	// Returns state right before the tx happends
+	// Returns state right before the tx happends.
 	fn state_before_tx(&self, id: TransactionId) -> Option<State<StateDB>>;
 
 	/// Returns traces matching given filter.

@@ -1903,82 +1903,65 @@ impl BlockChainClient for Client {
 			return None;
 		}
 
-		let tx_address = self.transaction_address(TransactionId::Hash(tx_hash))?;
-		let block_hash = tx_address.block_hash;
-		// let _tx_idx = tx_address.index;
-
-		let state = match self.state_at_beginning(BlockId::Hash(block_hash)) {
+		let state = match self.state_before_tx(TransactionId::Hash(tx_hash)) {
 			Some(state) => state,
 			_ => return None,
 		};
 
-		// XL_TODO: mut state by replay until
+		let root = match state.storage_root(account) {
+			Ok(Some(root)) => root,
+			_ => return None,
+		};
 
+		let (_, db) = state.drop();
+		let account_db = self.factories.accountdb.readonly(db.as_hashdb(), keccak(account));
+		let trie = match self.factories.trie.readonly(account_db.as_hashdb(), &root) {
+			Ok(trie) => trie,
+			_ => {
+				trace!(target: "fatdb", "list_storage: Couldn't open the DB");
+				return None;
+			}
+		};
 
-		None
+		let mut iter = match trie.iter() {
+			Ok(iter) => iter,
+			_ => return None,
+		};
 
+		if let Some(after) = after {
+			if let Err(e) = iter.seek(after) {
+				trace!(target: "fatdb", "list_storage: Couldn't seek the DB: {:?}", e);
+			} else {
+				// Position the iterator after the `after` element
+				iter.next();
+			}
+		}
 
+		fn encode_hex(bytes: &[u8]) -> String {
+    		let mut res = String::from("0x0000000000000000000000000000000000000000000000000000000000000000");
+    		let mut actual:&[u8] = &bytes;
+    		if bytes.len()>1 {
+    			actual = &bytes[1..bytes.len()]
+    		};
+		    let mut s = String::with_capacity(actual.len() * 2);
+		    for &b in actual {
+		        write!(&mut s, "{:02x}", b);
+		    }
+		    res.truncate(66-s.len());
+		    write!(&mut res, "{}", s);
+		    res
+		};
 
+		let pairs = iter.filter_map(|item| {
+							item.ok().map(|(key, storage)| (H256::from_slice(&key), encode_hex(&storage)))
+						});
 
-		// let state = match self.state_at(id) {
-		// 	Some(state) => state,
-		// 	_ => return None,
-		// };
+		let result = match count {
+			Some(cnt) => pairs.take(cnt as usize).collect(),
+			None => pairs.collect(),
+		};
 
-		// let root = match state.storage_root(account) {
-		// 	Ok(Some(root)) => root,
-		// 	_ => return None,
-		// };
-
-		// let (_, db) = state.drop();
-		// let account_db = self.factories.accountdb.readonly(db.as_hashdb(), keccak(account));
-		// let trie = match self.factories.trie.readonly(account_db.as_hashdb(), &root) {
-		// 	Ok(trie) => trie,
-		// 	_ => {
-		// 		trace!(target: "fatdb", "list_storage: Couldn't open the DB");
-		// 		return None;
-		// 	}
-		// };
-
-		// let mut iter = match trie.iter() {
-		// 	Ok(iter) => iter,
-		// 	_ => return None,
-		// };
-
-		// if let Some(after) = after {
-		// 	if let Err(e) = iter.seek(after) {
-		// 		trace!(target: "fatdb", "list_storage: Couldn't seek the DB: {:?}", e);
-		// 	} else {
-		// 		// Position the iterator after the `after` element
-		// 		iter.next();
-		// 	}
-		// }
-
-		// fn encode_hex(bytes: &[u8]) -> String {
-  //   		let mut res = String::from("0x0000000000000000000000000000000000000000000000000000000000000000");
-  //   		let mut actual:&[u8] = &bytes;
-  //   		if bytes.len()>1 {
-  //   			actual = &bytes[1..bytes.len()]
-  //   		};
-		//     let mut s = String::with_capacity(actual.len() * 2);
-		//     for &b in actual {
-		//         write!(&mut s, "{:02x}", b);
-		//     }
-		//     res.truncate(66-s.len());
-		//     write!(&mut res, "{}", s);
-		//     res
-		// };
-
-		// let pairs = iter.filter_map(|item| {
-		// 					item.ok().map(|(key, storage)| (H256::from_slice(&key), encode_hex(&storage)))
-		// 				});
-
-		// let result = match count {
-		// 	Some(cnt) => pairs.take(cnt as usize).collect(),
-		// 	None => pairs.collect(),
-		// };
-
-		// Some(result)
+		Some(result)
 	}
 
 	fn transaction(&self, id: TransactionId) -> Option<LocalizedTransaction> {
