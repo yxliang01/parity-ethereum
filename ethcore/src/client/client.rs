@@ -1650,44 +1650,35 @@ impl BlockChainClient for Client {
 			None => {warn!("blocknon")},
 		};
 		let mut state = match self.state_at_beginning(block){
-			Some(s) => {warn!("Here deaer"); s},
+			Some(s) => {/*warn!("Has state");*/ s},
 			None => {
-					warn!("fck pff");
+					/*warn!("No state");*/
 					return None
 			},
 		};
-		warn!("Here deaer");
+
+		let engine = self.engine.clone();
+		let analytics = CallAnalytics {
+							transaction_tracing: true,
+							vm_tracing: true,
+							state_diffing: true
+						};
+
+		const PROOF: &'static str = "Transactions fetched from blockchain; blockchain transactions are valid; qed";
+		const EXECUTE_PROOF: &'static str = "Transaction replayed; qed";
+
+		let mut i = 0;
+		for t in txs {
+			if i >= tx_address.index {break;}
+
+			let t = SignedTransaction::new(t).expect(PROOF);
+			let machine = engine.machine();
+			let x = Self::do_virtual_call(machine, &env_info, &mut state, &t, analytics).expect(EXECUTE_PROOF);
+			env_info.gas_used = env_info.gas_used + x.gas_used;
+			i+=1;
+		};
+
 		Some(state)
-
-		// let option_state = match self.state_at_beginning(block){
-		// 	Some(s) => s,
-		// 	_ => return None,
-		// };
-
-
-		// None
-
-		// let engine = self.engine.clone();
-		// let analytics = CallAnalytics {
-		// 					transaction_tracing: true,
-		// 					vm_tracing: true,
-		// 					state_diffing: true
-		// 				};
-
-		// const PROOF: &'static str = "Transactions fetched from blockchain; blockchain transactions are valid; qed";
-		// const EXECUTE_PROOF: &'static str = "Transaction replayed; qed";
-
-		// let mut i = 0;
-		// for t in txs {
-		// 	if i >= tx_address.index {break;}
-
-		// 	let t = SignedTransaction::new(t).expect(PROOF);
-		// 	let machine = engine.machine();
-		// 	let x = Self::do_virtual_call(machine, &env_info, &mut state, &t, analytics).expect(EXECUTE_PROOF);
-		// 	env_info.gas_used = env_info.gas_used + x.gas_used;
-		// 	i+=1;
-		// };
-
 	}
 
 	fn mode(&self) -> Mode {
@@ -1958,11 +1949,11 @@ impl BlockChainClient for Client {
 
 		let state = match self.state_before_tx(TransactionId::Hash(tx_hash)) {
 			Some(state) => {
-				warn!("Not None!");
+				/*warn!("Not None!");*/
 				state
 			},
 			_ => {
-				warn!("None!");
+				/*warn!("None!");*/
 				return None;
 			},
 		};
