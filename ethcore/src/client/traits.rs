@@ -35,7 +35,8 @@ use trace::LocalizedTrace;
 use transaction::{self, LocalizedTransaction, SignedTransaction};
 use verification::queue::QueueInfo as BlockQueueInfo;
 use verification::queue::kind::blocks::Unverified;
-use state::StateInfo;
+use state_db::StateDB;
+use state::{StateInfo, State};
 use header::Header;
 use engines::EthEngine;
 
@@ -274,7 +275,11 @@ pub trait BlockChainClient : Sync + Send + AccountData + BlockChain + CallContra
 
 	/// Get a list of all storage in the block `id`, if fat DB is in operation, otherwise `None`.
 	/// If `after` is set the list starts with the following item.
-	fn list_storage(&self, id: BlockId, account: &Address, after: Option<&H256>, count: Option<u64>) -> Option<BTreeMap<H256, String>>;
+	fn list_storage_after_block(&self, id: BlockId, account: &Address, after: Option<&H256>, count: Option<u64>) -> Option<BTreeMap<H256, String>>;
+
+	/// Get a list of all storage before a specific tx happening, if fat DB is in operation, otherwise `None`.
+	/// If `after` is set the list starts with the following item.
+	fn list_storage_before_tx(&self, tx_hash: H256, account: &Address, after: Option<&H256>, count: Option<u64>) -> Option<BTreeMap<H256, String>>;
 
 	/// Get transaction with given hash.
 	fn transaction(&self, id: TransactionId) -> Option<LocalizedTransaction>;
@@ -323,6 +328,9 @@ pub trait BlockChainClient : Sync + Send + AccountData + BlockChain + CallContra
 
 	/// Replays all the transactions in a given block for inspection.
 	fn replay_block_transactions(&self, block: BlockId, analytics: CallAnalytics) -> Result<Box<Iterator<Item = (H256, Executed)>>, CallError>;
+
+	// Returns state right before the tx happends.
+	fn state_before_tx(&self, id: TransactionId) -> Option<State<StateDB>>;
 
 	/// Returns traces matching given filter.
 	fn filter_traces(&self, filter: TraceFilter) -> Option<Vec<LocalizedTrace>>;

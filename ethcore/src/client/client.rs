@@ -1627,6 +1627,60 @@ impl BlockChainClient for Client {
 			})))
 	}
 
+	fn state_before_tx(&self, id: TransactionId) -> Option<State<StateDB>> {
+		let tx_address = match self.transaction_address(id) {
+			Some(addr) => addr,
+			None => return None,
+		};
+		let block = BlockId::Hash(tx_address.block_hash);
+		let mut env_info = match self.env_info(block){
+			Some(info) => info,
+			None => return None,
+		};
+		let body = match self.block_body(block){
+			Some(bd) => bd,
+			None => return None,
+		};
+		let txs = body.transactions();
+
+		warn!("txs len: {}", txs.len());
+		warn!("tx_address.index: {}", tx_address.index);
+		match self.block_number(block) {
+			Some(expr) => {warn!("block: {}", expr)},
+			None => {warn!("blocknon")},
+		};
+		let mut state = match self.state_at_beginning(block){
+			Some(s) => {/*warn!("Has state");*/ s},
+			None => {
+					/*warn!("No state");*/
+					return None
+			},
+		};
+
+		let engine = self.engine.clone();
+		let analytics = CallAnalytics {
+							transaction_tracing: true,
+							vm_tracing: true,
+							state_diffing: true
+						};
+
+		const PROOF: &'static str = "Transactions fetched from blockchain; blockchain transactions are valid; qed";
+		const EXECUTE_PROOF: &'static str = "Transaction replayed; qed";
+
+		let mut i = 0;
+		for t in txs {
+			if i >= tx_address.index {break;}
+
+			let t = SignedTransaction::new(t).expect(PROOF);
+			let machine = engine.machine();
+			let x = Self::do_virtual_call(machine, &env_info, &mut state, &t, analytics).expect(EXECUTE_PROOF);
+			env_info.gas_used = env_info.gas_used + x.gas_used;
+			i+=1;
+		};
+
+		Some(state)
+	}
+
 	fn mode(&self) -> Mode {
 		let r = self.mode.lock().clone().into();
 		trace!(target: "mode", "Asked for mode = {:?}. returning {:?}", &*self.mode.lock(), r);
@@ -1820,7 +1874,7 @@ impl BlockChainClient for Client {
 		Some(keys)
 	}
 
-	fn list_storage(&self, id: BlockId, account: &Address, after: Option<&H256>, count: Option<u64>) -> Option<BTreeMap<H256, String>> {
+	fn list_storage_after_block(&self, id: BlockId, account: &Address, after: Option<&H256>, count: Option<u64>) -> Option<BTreeMap<H256, String>> {
 		if !self.factories.trie.is_fat() {
 			trace!(target: "fatdb", "list_storage: Not a fat DB");
 			return None;
@@ -1830,6 +1884,80 @@ impl BlockChainClient for Client {
 			Some(state) => state,
 			_ => return None,
 		};
+
+		let root = match state.storage_root(account) {
+			Ok(Some(root)) => root,
+			_ => return None,
+		};
+
+		let (_, db) = state.drop();
+		let account_db = self.factories.accountdb.readonly(db.as_hashdb(), keccak(account));
+		let trie = match self.factories.trie.readonly(account_db.as_hashdb(), &root) {
+			Ok(trie) => trie,
+			_ => {
+				trace!(target: "fatdb", "list_storage: Couldn't open the DB");
+				return None;
+			}
+		};
+
+		let mut iter = match trie.iter() {
+			Ok(iter) => iter,
+			_ => return None,
+		};
+
+		if let Some(after) = after {
+			if let Err(e) = iter.seek(after) {
+				trace!(target: "fatdb", "list_storage: Couldn't seek the DB: {:?}", e);
+			} else {
+				// Position the iterator after the `after` element
+				iter.next();
+			}
+		}
+
+		fn encode_hex(bytes: &[u8]) -> String {
+    		let mut res = String::from("0x0000000000000000000000000000000000000000000000000000000000000000");
+    		let mut actual:&[u8] = &bytes;
+    		if bytes.len()>1 {
+    			actual = &bytes[1..bytes.len()]
+    		};
+		    let mut s = String::with_capacity(actual.len() * 2);
+		    for &b in actual {
+		        write!(&mut s, "{:02x}", b);
+		    }
+		    res.truncate(66-s.len());
+		    write!(&mut res, "{}", s);
+		    res
+		};
+
+		let pairs = iter.filter_map(|item| {
+							item.ok().map(|(key, storage)| (H256::from_slice(&key), encode_hex(&storage)))
+						});
+
+		let result = match count {
+			Some(cnt) => pairs.take(cnt as usize).collect(),
+			None => pairs.collect(),
+		};
+
+		Some(result)
+	}
+
+	fn list_storage_before_tx(&self, tx_hash: H256, account: &Address, after: Option<&H256>, count: Option<u64>) -> Option<BTreeMap<H256, String>> {
+		if !self.factories.trie.is_fat() {
+			trace!(target: "fatdb", "list_storage: Not a fat DB");
+			return None;
+		}
+
+		let state = match self.state_before_tx(TransactionId::Hash(tx_hash)) {
+			Some(state) => {
+				/*warn!("Not None!");*/
+				state
+			},
+			_ => {
+				/*warn!("None!");*/
+				return None;
+			},
+		};
+		
 
 		let root = match state.storage_root(account) {
 			Ok(Some(root)) => root,

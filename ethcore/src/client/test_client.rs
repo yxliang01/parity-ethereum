@@ -64,7 +64,7 @@ use header::Header;
 use encoded;
 use engines::EthEngine;
 use ethtrie;
-use state::StateInfo;
+use state::{StateInfo, State};
 use views::BlockView;
 
 /// Test client.
@@ -632,9 +632,13 @@ impl BlockChainClient for TestBlockChainClient {
 	fn replay(&self, _id: TransactionId, _analytics: CallAnalytics) -> Result<Executed, CallError> {
 		self.execution_result.read().clone().unwrap()
 	}
-
+	
 	fn replay_block_transactions(&self, _block: BlockId, _analytics: CallAnalytics) -> Result<Box<Iterator<Item = (H256, Executed)>>, CallError> {
 		Ok(Box::new(self.traces.read().clone().unwrap().into_iter().map(|t| t.transaction_hash.unwrap_or(H256::new())).zip(self.execution_result.read().clone().unwrap().into_iter())))
+	}
+
+	fn state_before_tx(&self, _id: TransactionId) -> Option<State<StateDB>> {
+		None
 	}
 
 	fn block_total_difficulty(&self, _id: BlockId) -> Option<U256> {
@@ -671,7 +675,11 @@ impl BlockChainClient for TestBlockChainClient {
 		None
 	}
 
-	fn list_storage(&self, _id: BlockId, _account: &Address, _after: Option<&H256>, _count: Option<u64>) -> Option<BTreeMap<H256, String>> {
+	fn list_storage_after_block(&self, _id: BlockId, _account: &Address, _after: Option<&H256>, _count: Option<u64>) -> Option<BTreeMap<H256, String>> {
+		None
+	}
+
+	fn list_storage_before_tx(&self, _tx_hash: H256, _account: &Address, _after: Option<&H256>, _count: Option<u64>) -> Option<BTreeMap<H256, String>> {
 		None
 	}
 

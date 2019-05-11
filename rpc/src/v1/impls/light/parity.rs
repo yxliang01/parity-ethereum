@@ -248,6 +248,10 @@ impl Parity for ParityClient {
 		Err(errors::light_unimplemented(None))
 	}
 
+	fn list_address_storage_before(&self, _: H160, _: Option<u64>, _: Option<H256>, _: H256) -> Result<Option<BTreeMap<H256, String>>> {
+		Err(errors::light_unimplemented(None))
+	}
+
 	fn encrypt_message(&self, key: H512, phrase: Bytes) -> Result<Bytes> {
 		ecies::encrypt(&key.into(), &DEFAULT_MAC, &phrase.0)
 			.map_err(errors::encryption)

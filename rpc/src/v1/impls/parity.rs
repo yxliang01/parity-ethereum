@@ -308,7 +308,15 @@ impl<C, M, U, S> Parity for ParityClient<C, M, U> where
 		};
 
 		let pairs = self.client
-			.list_storage(number, &address.into(), after.map(Into::into).as_ref(), count)
+			.list_storage_after_block(number, &address.into(), after.map(Into::into).as_ref(), count)
+			.map(|a| a.into_iter().map(|(key, storage)| (key.into(), storage.into())).collect());
+
+		Ok(pairs)
+	}
+
+	fn list_address_storage_before(&self, address: H160, count: Option<u64>, after: Option<H256>, before_tx: H256) -> Result<Option<BTreeMap<H256, String>>> {
+		let pairs = self.client
+			.list_storage_before_tx(before_tx.into(), &address.into(), after.map(Into::into).as_ref(), count)
 			.map(|a| a.into_iter().map(|(key, storage)| (key.into(), storage.into())).collect());
 
 		Ok(pairs)
